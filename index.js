@@ -1,5 +1,5 @@
 // NOTE THAT THIS WILL USE THE LEFT HAND RULE FOR X,Y,Z
-// Positive Z means it's Depth is away from camera
+// Positive Z means it's Depth is away from camera (100 = far, 1 = close )
 
 
 function setupCanvas(){
@@ -20,21 +20,75 @@ class CatHead{
     this.x = x;
     this.y = y;
     this.z = z;
+    this.verticies = [];
+    this.edges = [];
   }
 
   draw(){
     // Setup the Verticies and Edges
-    let vertices = [ 
-    { x:  1,  y: 1,  z: 1},   // 0
-    { x:  1,  y: -1, z:  -1}, // 1
-    { x: -1,  y: -1, z: -1}   // 2
+    this.vertices = [
+    // Right Head Shape
+    { x:  0,  y: 0,  z: 1},   // 0 (Dummy bc forgot to index at 0)
+    { x:  1,  y: 1,  z: 1},   // 1
+    { x:  1,  y: 1,  z: 1},   // 2
+    { x:  1,  y: 1,  z: 1},   // 3
+    { x:  1,  y: 1,  z: 1},   // 4
+    { x:  1,  y: 1,  z: 1},   // 5
+    // Right Ear
+    { x:  1,  y: 1,  z: 1},   // 6
+    { x:  1,  y: 1,  z: 1},   // 7
+    { x:  1,  y: 1,  z: 1},   // 8
+    { x:  1,  y: 1,  z: 1},   // 9
+    { x:  1,  y: 1,  z: 1},   // 10
+    // Right end of Head
+    { x:  1,  y: 1,  z: 1},   // 11
+    // Right Eye
+    { x:  1,  y: 1,  z: 1},   // 12
+    { x:  1,  y: 1,  z: 1},   // 13
+    { x:  1,  y: 1,  z: 1},   // 14
+    { x:  1,  y: 1,  z: 1},   // 15
+    // Right Mouth
+    { x:  1,  y: 1,  z: 1},   // 16
+    { x:  1,  y: 1,  z: 1},   // 17
+    { x:  1,  y: 1,  z: 1},   // 18
+    // Right Whisekrs
+    { x:  1,  y: 1,  z: 1},   // 19
+    { x:  1,  y: 1,  z: 1},   // 20
+    { x:  1,  y: 1,  z: 1},   // 21
+    { x:  1,  y: 1,  z: 1},   // 22
+    { x:  1,  y: 1,  z: 1},   // 23
+    { x:  1,  y: 1,  z: 1},   // 24
+
+    // Left Cat Head
   ];
 
   let edges = [
-    [0, 1], // 0->1
-    [1, 2], // 1->2
-    [2, 0], // 2->0
-  ]
+    // Right Head Shape
+    [1, 2],
+    [2, 3],
+    [3, 4],
+    [4, 5],
+    // Right Ear
+    [5, 6],
+    [6, 8],
+    [7, 8],
+    [5, 9],
+    [9, 10],
+    // Right End Of Head
+    [10, 11],
+    // Right Eye
+    [12, 13],
+    [13, 14],
+    [14, 15],
+    [15, 12],
+    // Right Mouth
+    [16, 17],
+    [17, 18],
+    // Right Whiskers
+    [19, 20],
+    [21, 22],
+    [23, 24],
+  ];
 
     // Translate the verticies to U, V Coords relative to camera (Flip V for Canvas)
     let projectedVertices = []
