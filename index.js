@@ -6,11 +6,13 @@ const KINDA_CLOSE = 30;
 const KINDA_FAR = 70;
 const FAR = 100;
 const SUPER_FAR = 1000;
+const SCREEN_WIDTH = 320;
+const SCREEN_HEIGHT = 200;
 
 function setupCanvas(){
-    // our goal is to create a game or interactive art display on mock 320x200 pixel display (using your computers display).  320x200 is an example resolution of computer screens from the early 1980s.  
-    ctx.width = 320;
-    ctx.height = 200;
+    // our goal is to create a game or interactive art display on mock SCREEN_WIDTHxSCREEN_HEIGHT pixel display (using your computers display).  SCREEN_WIDTHxSCREEN_HEIGHT is an example resolution of computer screens from the early 1980s.  
+    ctx.width = SCREEN_WIDTH;
+    ctx.height = SCREEN_HEIGHT;
     // Background color for canvas
     ctx.fillStyle = "#050510";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -172,8 +174,8 @@ class CatHead{
         let newV = relativeCamVert.y / relativeCamVert.z
         
         // Apply Translation and transformations here (rn from HW)
-        newU = newU * 200; // Scale U
-        newV = newV * 200; // Scale V
+        newU = newU * 300; // Scale U
+        newV = newV * 300; // Scale V
 
         // Translation happens after scale
         newU += this.x;
@@ -218,8 +220,26 @@ function drawLine(x1, y1, x2, y2){
   ctx.stroke();
 }
 
+function makePixelatedLine(x1, y1, x2, y2){
+  // Step 1: Find the slop of the line
+  const slope = (y2-y1) / (x2 - x1); 
+  // Step 2: Itterate through the x points of the line
+  for(let i = x1; i < x2; i++){
+    // Step 3: Draw pixel for the found pixel location.
+    // x, y, w, l
+    let rectX = i;
+    let rectY = canvas.height - (y1 + slope * i);
+    ctx.strokeStyle = "white";
+    ctx.rect(rectX, rectY, 1, 1);
+    ctx.stroke();
+  }
+
+}
+
 function update(){
   // Game logic
+
+  // Update the position of the Cat head via a cyclic formula (Figure 8 ish)
 }
 
 function draw(){
@@ -244,9 +264,11 @@ function main(){
   setupCanvas();
   
   margo = new CatHead(canvas.width/2, canvas.height/2, 0);
-  margo.draw();
+  // margo.draw();
   // koko = new CatHead();
-  
+  makePixelatedLine(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  makePixelatedLine(SCREEN_WIDTH * 1/4, SCREEN_HEIGHT/2, SCREEN_WIDTH * 3/4, SCREEN_HEIGHT/2);
+
   gameLoop(); // Start game logic // how to pass in components
 }
 

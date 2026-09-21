@@ -1,0 +1,21 @@
+/* Had to do this so that there would be no scroll or overflow */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: purple;
+}
+
+.pixel{
+    background-color: black;
+    outline-color: #FFFFFF70;
+    outline: solid 1px;
+}
+.pixelMatrix{
+    display: grid;
+    aspect-ratio: 320 / 200;
+    width: 100%;
+    height: auto;
+    grid-template-columns: repeat(320, 1fr);
+    grid-template-rows: repeat(200, 1fr);
+}
