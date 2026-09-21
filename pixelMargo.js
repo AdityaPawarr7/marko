@@ -82,12 +82,12 @@ function makePixelatedLine(x1, y1, x2, y2){
 }
 
 
-function drawTriangle(p1x, p1y, p2x, p2y, p3x, p3y){
+function drawTriangle(px1, py1, px2, py2, px3, py3){
     // Step 1: Get the bounding Box
-    xMin = Math.min(x1, x2, x3);
-    yMin = Math.min(y1, y2, y3);
-    xMax = Math.max(x1, x2, x3);
-    yMax = Math.max(y1, y2, y3);
+    xMin = Math.min(px1, px2, px3);
+    yMin = Math.min(py1, py2, py3);
+    xMax = Math.max(px1, px2, px3);
+    yMax = Math.max(py1, py2, py3);
 
     // Step 2: Start Itterating over the bounding box
     var barycentricHold = 0;
@@ -95,7 +95,7 @@ function drawTriangle(p1x, p1y, p2x, p2y, p3x, p3y){
         for(let y = yMin; y < yMax; y++){
             console.log(`Checking Triangle Bounding Box (${x}, ${y})`)
 
-            barycentricHold = findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y, x, y);
+            barycentricHold = findBarycentricCoordinates(px1, py1, px2, py2, px3, py3, x, y);
             console.log(barycentricHold);
             if(barycentricHold.a < 0 || barycentricHold.b < 0 || barycentricHold.c < 0){
                 // ONE OF THE COORDS WAS NEGATIVE!
@@ -113,19 +113,26 @@ function drawTriangle(p1x, p1y, p2x, p2y, p3x, p3y){
     // Step 3: For each pixel, determine if it is in bounds with Barycentric Coordiantes
 }
 
-// THIS ALSO NEEDS TO BE CLOCKWISE
-function findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y, v1, v2){
+// THIS ALSO NEEDS TO BE CLOCKWISE //ax,  ay,  bx,  by,  cx,  cy,  vx, vy
+function findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y, vx, vy){
     // Step 1: Find the area of the whole triangle
-    const wholeArea = getTriangleArea(p1x, p1y, p2x, p2y, p3x, p3y);
+    // const wholeArea = getTriangleArea(p1x, p1y, p2x, p2y, p3x, p3y);
+    const wholeArea = Math.abs(getTriangleArea(p1x, p1y, p2x, p2y, p3x, p3y)); // needed?
+    console.log(`Whole area: ${wholeArea}`)
 
-    // Find a
-    // const aArea = getTriangleArea(); // WHAT TO SOLVE FOR???
+    // Find a p2 -> V -> p3
+    const aArea = getTriangleArea(p2x, p2y, vx, vy, p3x, p3y);
+    console.log(`aArea: ${aArea}`);
 
-    // Find b
-    // const bArea = getTriangleArea(); // WHAT TO SOLVE FOR???
+    // Find b p1 -> p3 -> V
+    const bArea = getTriangleArea(p1x, p1y, p3x, p3y, vx, vy);
+    console.log(`bArea: ${bArea}`);
 
-    // Find c
-    // const cArea = getTriangleArea(); // WHAT TO SOLVE FOR???
+    // Find c P1 -> V -> p2 
+    const cArea = getTriangleArea(p1x, p1y, vx, vy, p2x, p2y);
+    console.log(`cArea: ${cArea}`);
+
+    console.log(`Sum of areas: ${aArea + bArea + cArea} / ${wholeArea}`);
 
     return {a: aArea/wholeArea, b: bArea/wholeArea, c: cArea/wholeArea};
 }
@@ -133,7 +140,7 @@ function findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y, v1, v2){
 // https://jtsorlinis.github.io/rendering-tutorial/#:~:text=Area%20of%20a%20triangle%20(aka%20maths)
 // CLOCKWISE ONLY
 function getTriangleArea(px1, py1, px2, py2, px3, py3){
-    return (((px2-px1)(py3-py1))-((py2-py1)(px3-px1))) / 2
+    return (((px2-px1)*(py3-py1))-((py2-py1)*(px3-px1))) / 2;
 }
 
 const display = new displayGrid();
@@ -142,6 +149,8 @@ function main(){
     makePixelatedLine(0, 0, 319, 199);
     // makePixelatedLine(0, 199, 319, 0);
     makePixelatedLine(319, 0, 0, 199);
+
+    drawTriangle(50, 50, 100, 100, 150, 50);
 }
 
 
