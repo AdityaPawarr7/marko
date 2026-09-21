@@ -4,13 +4,16 @@ html, body {
   padding: 0;
   overflow: hidden;
   background-color: purple;
+  height: 100vh;
+  width: 100vw;
 }
 
 .pixel{
     background-color: black;
-    outline-color: #FFFFFF70;
     outline: solid 1px;
+    outline-color: #FFFFFF20;
 }
+
 .pixelMatrix{
     display: grid;
     aspect-ratio: 320 / 200;

@@ -27,11 +27,13 @@ class displayGrid{
 
         for (let r = 0; r < ROW_SIZE; r++) {
             for (let c = 0; c < COLUMN_SIZE; c++) {
-                // 1. Create the physical HTML box
+                // Make a div for the pixel
                 const cell = document.createElement('div');
                 cell.className = 'pixel';
+                // Color (Like 'off' color for gameboy)
+                cell.style.backgroundColor = "#9bbc0f";
                 
-                // 2. Link the HTML element directly into your 2D array matrix
+                // 2. Add to matrix
                 this.displayMatrix[r][c].element = cell;
 
                 // 3. Append to our off-screen fragment
@@ -41,17 +43,78 @@ class displayGrid{
         matrix.appendChild(fragment);
     }
 
-    colorPixel(row, col){
-        const pixel = this.displayMatrix[row][col];
-        pixel.element.style.backgroundColor = "#FF0000";
+    colorPixel(x, y){
+        // Dont mess it up!!!!!
+        if(x < 0 || x >= COLUMN_SIZE || y < 0 || y >= ROW_SIZE){
+            console.log("Pixel was outside of drawable range, skipping");
+            return;
+        }
+
+        const pixel = this.displayMatrix[ROW_SIZE-1 - y][x];
+        // Draw for the on state of gameboy
+        pixel.element.style.backgroundColor = "#0f380f";
     }
 
 };
 
-function main(){
-    const display = new displayGrid();
-    display.colorPixel(200, 100);
+function makePixelatedLine(x1, y1, x2, y2){
+
+    let slope = .000000000001;
+    if(x2-x1 != 0){
+        slope = (y2-y1) / (x2 - x1); 
+    }
+  // Step 1: Find the slop of the line
+//   const slope = (Math.max(y2, y1) - Math.min(y1, y2)) / (Math.max(x2, x1) - Math.min(x1, x2)); 
+
+  // Step 2a: Find which point to start at
+  let xStart = Math.min(x1, x2);
+  let xEnd = Math.max(x1, x2);
+  // Step 2b: Itterate through the x points of the line
+  for(let i = xStart; i < xEnd; i++){
+//   for(let i = x1; i < x2; i++){
+    // console.log(`Drawing line for (${i}, ${y1 + slope * i})`);
+    // Step 3: Draw pixel for the found pixel location.
+    display.colorPixel(i, Math.round(y1 + slope*i));
+  }
 }
+
+
+function drawTriangle(p1x, p1y, p2x, p2y, p3x, p3y){
+    // Step 1: Get the bounding Box
+    xMin = Math.min(x1, x2, x3);
+    yMin = Math.min(y1, y2, y3);
+    xMax = Math.max(x1, x2, x3);
+    yMax = Math.max(y1, y2, y3);
+
+    // Step 2: Start Itterating over the bounding box
+    for(let x = xMin; x < xMax; x++){
+        for(let y = yMin; y < yMax; y++){
+            console.log(`Checking Triangle Bounding Box (${x}, ${y})`)
+        }
+    }
+
+
+    // Step 3: For each pixel, determine if it is in bounds with Barycentric Coordiantes
+}
+
+function findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y){
+    // Step 1: Find the area of the whole triangle
+
+    // Find a
+
+    // Find b
+
+    // Find c
+}
+
+const display = new displayGrid();
+function main(){
+    display.colorPixel(0, 0);
+    makePixelatedLine(0, 0, 319, 199);
+    // makePixelatedLine(0, 199, 319, 0);
+    makePixelatedLine(319, 0, 0, 199);
+}
+
 
 // run the code
 main();

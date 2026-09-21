@@ -233,7 +233,6 @@ function makePixelatedLine(x1, y1, x2, y2){
     ctx.rect(rectX, rectY, 1, 1);
     ctx.stroke();
   }
-
 }
 
 function update(){
