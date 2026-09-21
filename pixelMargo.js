@@ -1,7 +1,3 @@
-function getTriangleArea(p1, p2, p3){
-    console.log(`Getting triangle area from {p1}, {p2}, {p3}`)
-}
-
 const ROW_SIZE = 200;
 const COLUMN_SIZE = 320;
 
@@ -18,8 +14,6 @@ class displayGrid{
         );
         this.initializeDOMGrid();
         console.log(this.displayMatrix[199][319]); // Test for value in 'last' pixel
-
-        // But! we also need the pixels to represent a small area on our display. 
     }
 
     initializeDOMGrid(){
@@ -55,30 +49,29 @@ class displayGrid{
         pixel.element.style.backgroundColor = "#0f380f";
 
         // Since we are dealing w performance, may need to
-        // Add the colored pixels to a set so they can reset faster. 
+        // Add the colored pixels to a set so they can reset faster.
+        coloredSet.add(pixel); 
     }
 
 };
 
 function makePixelatedLine(x1, y1, x2, y2){
-
+    
+    // Step 1: Find the slop of the line
     let slope = .000000000001;
     if(x2-x1 != 0){
         slope = (y2-y1) / (x2 - x1); 
     }
-  // Step 1: Find the slop of the line
-//   const slope = (Math.max(y2, y1) - Math.min(y1, y2)) / (Math.max(x2, x1) - Math.min(x1, x2)); 
 
-  // Step 2a: Find which point to start at
-  let xStart = Math.min(x1, x2);
-  let xEnd = Math.max(x1, x2);
-  // Step 2b: Itterate through the x points of the line
-  for(let i = xStart; i < xEnd; i++){
-//   for(let i = x1; i < x2; i++){
-    // console.log(`Drawing line for (${i}, ${y1 + slope * i})`);
-    // Step 3: Draw pixel for the found pixel location.
-    display.colorPixel(i, Math.round(y1 + slope*i));
-  }
+    // Step 2a: Find which point to start at
+    let xStart = Math.min(x1, x2);
+    let xEnd = Math.max(x1, x2);
+    // Step 2b: Itterate through the x points of the line
+    for(let i = xStart; i < xEnd; i++){
+        // console.log(`Drawing line for (${i}, ${y1 + slope * i})`);
+        // Step 3: Draw pixel for the found pixel location.
+        display.colorPixel(i, Math.round(y1 + slope*i));
+    }
 }
 
 
@@ -91,33 +84,33 @@ function drawTriangle(px1, py1, px2, py2, px3, py3){
 
     // Step 2: Start Itterating over the bounding box
     var barycentricHold = 0;
+    const wholeArea = Math.abs(getTriangleArea(px1, py1, px2, py2, px3, py3));
     for(let x = xMin; x < xMax; x++){
         for(let y = yMin; y < yMax; y++){
-            console.log(`Checking Triangle Bounding Box (${x}, ${y})`)
+            console.log(`Checking Triangle Bounding Box (${x}, ${y})`);
 
-            barycentricHold = findBarycentricCoordinates(px1, py1, px2, py2, px3, py3, x, y);
+            barycentricHold = findBarycentricCoordinates(px1, py1, px2, py2, px3, py3, x, y, wholeArea);
             console.log(barycentricHold);
+            // Step 3: For each pixel, determine if it is in bounds with Barycentric Coordiantes
             if(barycentricHold.a < 0 || barycentricHold.b < 0 || barycentricHold.c < 0){
-                // ONE OF THE COORDS WAS NEGATIVE!
-                // SKIP
+                // (Skip) Do not draw pixels with a negative barycentric coord. 
             }
             else{
-                // ALL + !, Draw
+                // all positive, Draw
                 display.colorPixel(x, y);
             }
 
         }
     }
 
-
-    // Step 3: For each pixel, determine if it is in bounds with Barycentric Coordiantes
 }
 
 // THIS ALSO NEEDS TO BE CLOCKWISE //ax,  ay,  bx,  by,  cx,  cy,  vx, vy
-function findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y, vx, vy){
+function findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y, vx, vy, wholeArea){
     // Step 1: Find the area of the whole triangle
-    // const wholeArea = getTriangleArea(p1x, p1y, p2x, p2y, p3x, p3y);
-    const wholeArea = Math.abs(getTriangleArea(p1x, p1y, p2x, p2y, p3x, p3y)); // needed?
+    if(wholeArea == null){
+        wholeArea = Math.abs(getTriangleArea(p1x, p1y, p2x, p2y, p3x, p3y)); // needed?
+    }
     console.log(`Whole area: ${wholeArea}`)
 
     // Find a p2 -> V -> p3
@@ -138,21 +131,47 @@ function findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y, vx, vy){
 }
 
 // https://jtsorlinis.github.io/rendering-tutorial/#:~:text=Area%20of%20a%20triangle%20(aka%20maths)
-// CLOCKWISE ONLY
+// CLOCKWISE ONLY (Way to turn these into clockwise no matter what?)
 function getTriangleArea(px1, py1, px2, py2, px3, py3){
     return (((px2-px1)*(py3-py1))-((py2-py1)*(px3-px1))) / 2;
 }
 
-const display = new displayGrid();
-function main(){
-    display.colorPixel(0, 0);
-    makePixelatedLine(0, 0, 319, 199);
-    // makePixelatedLine(0, 199, 319, 0);
-    makePixelatedLine(319, 0, 0, 199);
+function clearDisplay(){
+    coloredSet.forEach(value => {value.element.style.backgroundColor = "#9bbc0f";})
+}
 
+// Gonna see if this works any better later I think
+function colorPixelSet(){
+    coloredSet.forEach(value => {value.element.style.backgroundColor = "#0f380f";})
+}
+
+// I want to make this global so that I can access anywhere easily. 
+const display = new displayGrid();
+const coloredSet = new Set(); // This may be needed for performance idk
+
+// Game logic should happen here
+function update(){
+
+}
+
+// Draw all of the triangles
+function draw(){
+    clearDisplay();
+
+    // Call draw functions on objects
+}
+
+// I got this off github which is apparently the best way to run a game
+function gameLoop(){
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+function main(){
+    display.colorPixel(10, 10);
+    makePixelatedLine(0, 0, 319, 199);
     drawTriangle(50, 50, 100, 100, 150, 50);
 }
 
-
-// run the code
 main();
