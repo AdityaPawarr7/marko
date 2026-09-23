@@ -2,6 +2,7 @@ const ROW_SIZE = 200;
 const COLUMN_SIZE = 320;
 
 const matrix = document.getElementById('pixelMatrix');
+const camera = {x: 0, y: 0, z: 0};
 // This class will be used to draw on the 320x200 grid
 // Via a 2d array of drawable objects
 class displayGrid{
@@ -13,7 +14,7 @@ class displayGrid{
             Array.from({ length: COLUMN_SIZE }, () => ({ r: 0, g: 0, b: 0, element: null }))
         );
         this.initializeDOMGrid();
-        console.log(this.displayMatrix[199][319]); // Test for value in 'last' pixel
+        // console.log(this.displayMatrix[199][319]); // Test for value in 'last' pixel
     }
 
     initializeDOMGrid(){
@@ -55,8 +56,158 @@ class displayGrid{
 
 };
 
+// https://jtsorlinis.github.io/rendering-tutorial/#:~:text=Area%20of%20a%20triangle%20(aka%20maths)
+// CLOCKWISE ONLY (Way to turn these into clockwise no matter what?)
+function getTriangleArea(px1, py1, px2, py2, px3, py3){
+    return (((px2-px1)*(py3-py1))-((py2-py1)*(px3-px1))) / 2;
+}
+
+class Triangle{
+    // Member varibles for 2d coordinates
+    u1; u2; u3; v1; v2; v3;
+    constructor(x1, y1, z1, x2, y2, z2, x3, y3, z3){
+        // 3d Coordinates
+        this.x1 = x1;
+        this.y1 = y1;
+        this.z1 = z1;
+        this.x2 = x2;
+        this.y2 = y2;
+        this.z2 = z2;
+        this.x3 = x3;
+        this.y3 = y3;
+        this.z3 = z3;
+    }
+
+    // https://jtsorlinis.github.io/rendering-tutorial/#:~:text=Area%20of%20a%20triangle%20(aka%20maths)
+    // CLOCKWISE ONLY (Way to turn these into clockwise no matter what?)
+    getArea(){
+        return (((this.x2-this.x1)*(this.y3-this.y1))-((this.y2-this.y1)*(this.x3-this.x1))) / 2;
+    }
+
+    // Only works when coords are correctly clockwise
+    getBarycentricCoordinates(u, v){
+        // Step 1: Find the area of the whole triangle
+        let wholeArea = Math.abs(this.getArea());
+
+        // Find a p2 -> V -> p3 (Need to call general Triangle Area Formula bc using the verticies Coords)
+        const aArea = getTriangleArea(this.u2, this.v2, u, v, this.u3, this.v3);
+
+        // Find b p1 -> p3 -> V
+        const bArea = getTriangleArea(this.u1, this.v1, this.u3, this.v3, u, v);
+
+        // Find c P1 -> V -> p2 
+        const cArea = getTriangleArea(this.u1, this.v1, u, v, this.u2, this.v2);
+
+        // console.log(`a:${aArea}, b:${bArea}, c:${cArea} / ${wholeArea}`);
+
+        // Not gonna port this to a class sorreeee
+        return {a: aArea/wholeArea, b: bArea/wholeArea, c: cArea/wholeArea};
+    }
+
+    translate3dCoordinates(){
+        // Translate 3d Coordinates to 2D relative to the camera
+        this.u1 = (this.x1 - camera.x) / (this.z1 - camera.z);
+        this.v1 = (this.y1 - camera.y) / (this.z1 - camera.z);
+        this.u2 = (this.x2 - camera.x) / (this.z2 - camera.z);
+        this.v2 = (this.y2 - camera.y) / (this.z2 - camera.z);
+        this.u3 = (this.x3 - camera.x) / (this.z3 - camera.z);
+        this.v3 = (this.y3 - camera.y) / (this.z3 - camera.z);
+    }
+
+    draw(){
+        // Translate the coordinates.
+        this.translate3dCoordinates();
+
+        // Setup The bounding box
+        let uMin = Math.floor(Math.min(this.u1, this.u2, this.u3));
+        let vMin = Math.floor(Math.min(this.v1, this.v2, this.v3));
+        let uMax = Math.ceil(Math.max(this.u1, this.u2, this.u3));
+        let vMax = Math.ceil(Math.max(this.v1, this.v2, this.v3));
+
+        console.log(`uMin: ${uMin}, yMin: ${vMin}, uMax: ${uMax}, vMax: ${vMax}`);
+        // Step 2: Start Itterating over the bounding box
+        var barycentricHold = 0;
+        for(let u = uMin; u <= uMax; u++){
+            for(let v = vMin; v <= vMax; v++){
+                // console.log(`Drawing Pixel (${u}, ${v})`);
+                barycentricHold = this.getBarycentricCoordinates(u, v);
+                // Step 3: For each pixel, determine if it is in bounds with Barycentric Coordiantes
+                if(barycentricHold.a < 0 || barycentricHold.b < 0 || barycentricHold.c < 0){
+                    // (Skip) Do not draw pixels with a negative barycentric coord. 
+                }
+                else{
+                    // all positive, Draw :)
+                    display.colorPixel(u, v);
+                }
+            }
+        }
+
+    }
+
+    // Translations should happen in the update part of game loop, so should apply to 3d
+    scale(scalar){
+        console.log(`first x1: ${this.x3}`);
+        this.x1 *= scalar;
+        this.y1 *= scalar;
+        this.z1 *= scalar;
+        this.x2 *= scalar;
+        this.y2 *= scalar;
+        this.z2 *= scalar;
+        this.x3 *= scalar;
+        this.y3 *= scalar;
+        this.z3 *= scalar;
+        console.log(`sec x1: ${this.x3}`);
+    }
+
+    vectorScale(scalingVector){
+        this.x1 *= scalingVector.x;
+        this.y1 *= scalingVector.y;
+        this.z1 *= scalingVector.z;
+        this.x2 *= scalingVector.x;
+        this.y2 *= scalingVector.y;
+        this.z2 *= scalingVector.z;
+        this.x3 *= scalingVector.x;
+        this.y3 *= scalingVector.y;
+        this.z3 *= scalingVector.z;
+    }
+
+    vectorTranslate(translationVector){
+        this.x1 = this.x1 + translationVector.x;
+        this.y1 = this.y1 + translationVector.y;
+        this.z1 = this.z1 + translationVector.z;
+        this.x2 = this.x2 + translationVector.x;
+        this.y2 = this.y2 + translationVector.y;
+        this.z2 = this.z2 + translationVector.z;
+        this.x3 = this.x3 + translationVector.x;
+        this.y3 = this.y3 + translationVector.y;
+        this.z3 = this.z3 + translationVector.z;
+    }
+}
+
+// This is the simplest 3d shape. It has 4 triangles. We can make it regular (equal edge lengths)
+// class Tetrahedron{
+//     constructor(x, y, z, edgeLength = 1){
+//         this.triangles = [];
+//         // Setup the basic coordinates
+//         let topCoordiante = {x: .5, y: 1, z: .5};
+//         let d1 = {x: 0, y: 0, z: 0};
+//         let d2 = {x: .5, y: 0, z: 1};
+//         let d3 = {x: 1, y: 0, z: 0};
+//         // Now add all of these as triangles. (Do they need to be a copy)
+//         // Note that this may cause some problems since the Verticies are reference objects
+//         this.triangles.push({}); // Bottom of triangle
+//         this.triangles.push();
+//         this.triangles.push();
+//         this.triangles.push();
+//     }
+
+//     draw(){
+//         // Translate all of the coordinates
+//     }
+
+// }
+
 function makePixelatedLine(x1, y1, x2, y2){
-    
     // Step 1: Find the slop of the line
     let slope = .000000000001;
     if(x2-x1 != 0){
@@ -130,12 +281,6 @@ function findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y, vx, vy, wholeA
     return {a: aArea/wholeArea, b: bArea/wholeArea, c: cArea/wholeArea};
 }
 
-// https://jtsorlinis.github.io/rendering-tutorial/#:~:text=Area%20of%20a%20triangle%20(aka%20maths)
-// CLOCKWISE ONLY (Way to turn these into clockwise no matter what?)
-function getTriangleArea(px1, py1, px2, py2, px3, py3){
-    return (((px2-px1)*(py3-py1))-((py2-py1)*(px3-px1))) / 2;
-}
-
 function clearDisplay(){
     coloredSet.forEach(value => {value.element.style.backgroundColor = "#9bbc0f";})
 }
@@ -169,9 +314,14 @@ function gameLoop(){
 }
 
 function main(){
-    display.colorPixel(10, 10);
-    makePixelatedLine(0, 0, 319, 199);
-    drawTriangle(50, 50, 100, 100, 150, 50);
+    // display.colorPixel(10, 10);
+    // makePixelatedLine(0, 0, 319, 199);
+    const testDepth = 1;
+    let test = new Triangle(0, 0, testDepth, 50, 100, testDepth, 100, 0, testDepth);
+    test.vectorScale({x: 2, y: .5, z: 1});
+    test.vectorTranslate({x: -50, y: 0, z: 0});
+    test.draw();
+    // gameLoop();
 }
 
 main();
