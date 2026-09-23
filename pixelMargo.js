@@ -1,80 +1,94 @@
 const ROW_SIZE = 200;
 const COLUMN_SIZE = 320;
 
-const matrix = document.getElementById('pixelMatrix');
+const canvas = document.getElementById('pixelCanvas');
+const ctx = canvas.getContext('2d');
+const PIXEL_SIZE = 5;
+const BACKGROUND_COLOR = "#9bbc0f";
+const ON_COLOR = "#0f380f";
+
+const FONT = {
+    'S': [ {x1:0,y1:4,x2:2,y2:4}, {x1:0,y1:4,x2:0,y2:2}, {x1:0,y1:2,x2:2,y2:2}, {x1:2,y1:2,x2:2,y2:0}, {x1:2,y1:0,x2:0,y2:0} ],
+    'T': [ {x1:0,y1:4,x2:2,y2:4}, {x1:1,y1:4,x2:1,y2:0} ],
+    'A': [ {x1:0,y1:0,x2:1,y2:4}, {x1:2,y1:0,x2:1,y2:4}, {x1:0,y1:2,x2:2,y2:2} ],
+    'R': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:4}, {x1:2,y1:4,x2:2,y2:2}, {x1:0,y1:2,x2:2,y2:2}, {x1:0,y1:2,x2:2,y2:0} ],
+    'E': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:4}, {x1:0,y1:2,x2:2,y2:2}, {x1:0,y1:0,x2:2,y2:0} ],
+    'L': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:0,x2:2,y2:0} ],
+    'C': [ {x1:2,y1:4,x2:0,y2:4}, {x1:0,y1:4,x2:0,y2:0}, {x1:0,y1:0,x2:2,y2:0} ],
+    ' ': []
+};
 // This class will be used to draw on the 320x200 grid
-// Via a 2d array of drawable objects
+// Via the 5 pixel by 5 pixel squares on the canvas.
+
 class displayGrid{
     constructor(){
-        // 320 x 200 (200 rows, 320 colums)
-        // Filled with RGB Values {r: red, g:green, b:blue} (black by default)
-        // this.displayMatrix = Array.from({ length: ROW_SIZE }, () => Array(COLUMN_SIZE).fill({r: 0, g: 0, b:0}));
-        this.displayMatrix = Array.from({ length: ROW_SIZE }, () => 
-            Array.from({ length: COLUMN_SIZE }, () => ({ r: 0, g: 0, b: 0, element: null }))
+        this.displayMatrix = Array.from({ length: ROW_SIZE }, () =>
+            Array.from({ length: COLUMN_SIZE }, () => BACKGROUND_COLOR)
         );
-        this.initializeDOMGrid();
-        console.log(this.displayMatrix[199][319]); // Test for value in 'last' pixel
     }
 
-    initializeDOMGrid(){
-        const fragment = document.createDocumentFragment();
-
-        for (let r = 0; r < ROW_SIZE; r++) {
-            for (let c = 0; c < COLUMN_SIZE; c++) {
-                // Make a div for the pixel
-                const cell = document.createElement('div');
-                cell.className = 'pixel';
-                // Color (Like 'off' color for gameboy)
-                cell.style.backgroundColor = "#9bbc0f";
-                
-                // 2. Add to matrix
-                this.displayMatrix[r][c].element = cell;
-
-                // 3. Append to our off-screen fragment
-                fragment.appendChild(cell);
-            }
-        }
-        matrix.appendChild(fragment);
-    }
-
-    colorPixel(x, y){
-        // Dont mess it up!!!!!
+    colorPixel(x, y, color = ON_COLOR){
         if(x < 0 || x >= COLUMN_SIZE || y < 0 || y >= ROW_SIZE){
             console.log("Pixel was outside of drawable range, skipping");
             return;
         }
-
-        const pixel = this.displayMatrix[ROW_SIZE-1 - y][x];
-        // Draw for the on state of gameboy
-        pixel.element.style.backgroundColor = "#0f380f";
-
-        // Since we are dealing w performance, may need to
-        // Add the colored pixels to a set so they can reset faster.
-        coloredSet.add(pixel); 
+        this.displayMatrix[ROW_SIZE-1 - y][x] = color;
     }
 
-};
-
-function makePixelatedLine(x1, y1, x2, y2){
-    
-    // Step 1: Find the slop of the line
-    let slope = .000000000001;
-    if(x2-x1 != 0){
-        slope = (y2-y1) / (x2 - x1); 
+    render(){
+        for(let r = 0; r < ROW_SIZE; r++){
+            for(let c = 0; c < COLUMN_SIZE; c++){
+                ctx.fillStyle = this.displayMatrix[r][c];
+                ctx.fillRect(c*PIXEL_SIZE, r*PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+            }
+        }
     }
-
-    // Step 2a: Find which point to start at
-    let xStart = Math.min(x1, x2);
-    let xEnd = Math.max(x1, x2);
-    // Step 2b: Itterate through the x points of the line
-    for(let i = xStart; i < xEnd; i++){
-        // console.log(`Drawing line for (${i}, ${y1 + slope * i})`);
-        // Step 3: Draw pixel for the found pixel location.
-        display.colorPixel(i, Math.round(y1 + slope*i));
+}
+function drawChar(char, x, y){
+    const glyph = FONT[char];
+    if(!glyph) return; // unknown character, just skip it
+    for(const seg of glyph){
+        makePixelatedLine(x + seg.x1, y + seg.y1, x + seg.x2, y + seg.y2);
     }
 }
 
+function drawText(str, x, y){
+    const CHAR_WIDTH = 4; // 3-wide glyph + 1 pixel gap
+    for(let i = 0; i < str.length; i++){
+        drawChar(str[i], x + i*CHAR_WIDTH, y);
+    }
+}
 
+function drawCursor(x, y){
+    makePixelatedLine(x, y+4, x+3, y+2);
+    makePixelatedLine(x+3, y+2, x, y);
+}
+function makePixelatedLine(x1, y1, x2, y2){
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+
+    if (Math.abs(dx) >= Math.abs(dy)) {
+        // horizontal-dominant (or 45°) — walk over x
+        const slope = dx !== 0 ? dy / dx : 0;
+        const xStart = Math.min(x1, x2);
+        const xEnd = Math.max(x1, x2);
+
+        for (let i = xStart; i <= xEnd; i++) {
+            const y = y1 + slope * (i - x1);
+            display.colorPixel(i, Math.round(y));
+        }
+    } else {
+        // vertical-dominant — walk over y
+        const slope = dy !== 0 ? dx / dy : 0;
+        const yStart = Math.min(y1, y2);
+        const yEnd = Math.max(y1, y2);
+        
+        for (let i = yStart; i <= yEnd; i++) {
+            const x = x1 + slope * (i - y1);
+            display.colorPixel(Math.round(x), i);
+        }
+    }
+}
 function drawTriangle(px1, py1, px2, py2, px3, py3){
     // Step 1: Get the bounding Box
     xMin = Math.min(px1, px2, px3);
@@ -137,29 +151,90 @@ function getTriangleArea(px1, py1, px2, py2, px3, py3){
 }
 
 function clearDisplay(){
-    coloredSet.forEach(value => {value.element.style.backgroundColor = "#9bbc0f";})
+    for(let r = 0; r < ROW_SIZE; r++){
+        display.displayMatrix[r].fill(BACKGROUND_COLOR);
+    }
 }
 
-// Gonna see if this works any better later I think
-function colorPixelSet(){
-    coloredSet.forEach(value => {value.element.style.backgroundColor = "#0f380f";})
-}
 
 // I want to make this global so that I can access anywhere easily. 
 const display = new displayGrid();
 const coloredSet = new Set(); // This may be needed for performance idk
 
-// Game logic should happen here
-function update(){
+let gameState = "MENU"; // "MENU" | "CHARACTER_SELECT" | "PLAYING"
 
+const menuOptions = [
+    { label: "START", x: 100, y: 80 },
+    { label: "SELECT CAT", x: 100, y: 100 },
+];
+let selectedOption = 0;
+
+function handleMenuInput(key){
+    if(key === "ArrowUp"){
+        selectedOption = (selectedOption - 1 + menuOptions.length) % menuOptions.length;
+        console.log(`Selected option: ${selectedOption}`);
+    }
+    else if(key === "ArrowDown"){
+        selectedOption = (selectedOption + 1) % menuOptions.length;
+        console.log(`Selected option: ${selectedOption}`);
+    }
+    else if(key === "Enter"){
+        const chosen = menuOptions[selectedOption].label;
+        console.log(`Chose: ${chosen}`);
+        if(chosen === "START"){
+            gameState = "CHARACTER_SELECT";
+        }
+        else if(chosen === "SELECT CAT"){
+            gameState = "CHARACTER_SELECT";
+        }
+        console.log(`gameState is now: ${gameState}`);
+    }
 }
 
-// Draw all of the triangles
+function handleCharacterSelectInput(key){
+    // We'll fill this in next step
+}
+
+document.addEventListener("keydown", (e) => {
+    if(gameState === "MENU"){
+        handleMenuInput(e.key);
+    }
+    else if(gameState === "CHARACTER_SELECT"){
+        handleCharacterSelectInput(e.key);
+    }
+});
+
+// Game logic should happen here
+function update(){
+    if(gameState === "MENU") updateMenu();
+    else if(gameState === "CHARACTER_SELECT") updateCharacterSelect();
+    else if(gameState === "PLAYING") updateGame();
+}
+
+function updateMenu(){}
+function updateCharacterSelect(){}
+function updateGame(){}
+
 function draw(){
     clearDisplay();
 
-    // Call draw functions on objects
+    if(gameState === "MENU") drawMenu();
+    else if(gameState === "CHARACTER_SELECT") drawCharacterSelect();
+    else if(gameState === "PLAYING") drawGame();
+
+    display.render();
 }
+
+function drawMenu(){
+    menuOptions.forEach((option, index) => {
+        drawText(option.label, option.x, option.y);
+        if(index === selectedOption){
+            drawCursor(option.x - 6, option.y);
+        }
+    });
+}
+function drawCharacterSelect(){}
+function drawGame(){}
 
 // I got this off github which is apparently the best way to run a game
 function gameLoop(){
@@ -169,9 +244,12 @@ function gameLoop(){
 }
 
 function main(){
-    display.colorPixel(10, 10);
-    makePixelatedLine(0, 0, 319, 199);
-    drawTriangle(50, 50, 100, 100, 150, 50);
+   
+    gameLoop();
+
+    //display.colorPixel(10, 10);
+    //makePixelatedLine(0, 0, 319, 199);
+    //drawTriangle(50, 50, 100, 100, 150, 50);
 }
 
 main();

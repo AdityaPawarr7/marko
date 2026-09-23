@@ -242,7 +242,7 @@ function update(){
 }
 
 function draw(){
-  // margo.draw();
+  margo.draw();
 }
 
 // Since this is gonna be a game, found some ppls examples of canvas frame logic
@@ -263,7 +263,7 @@ function main(){
   setupCanvas();
   
   margo = new CatHead(canvas.width/2, canvas.height/2, 0);
-  // margo.draw();
+  margo.draw();
   // koko = new CatHead();
   makePixelatedLine(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   makePixelatedLine(SCREEN_WIDTH * 1/4, SCREEN_HEIGHT/2, SCREEN_WIDTH * 3/4, SCREEN_HEIGHT/2);

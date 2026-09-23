@@ -8,17 +8,8 @@ html, body {
   width: 100vw;
 }
 
-.pixel{
-    background-color: black;
-    outline: solid 1px;
-    outline-color: #FFFFFF20;
-}
-
-.pixelMatrix{
-    display: grid;
+#pixelCanvas{
     aspect-ratio: 320 / 200;
     width: 100%;
     height: auto;
-    grid-template-columns: repeat(320, 1fr);
-    grid-template-rows: repeat(200, 1fr);
 }
