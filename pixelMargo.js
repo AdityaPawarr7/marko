@@ -134,12 +134,13 @@ class Triangle{
         if(this.z1 - camera.z <= 0 || this.z2 - camera.z <= 0 || this.z3 - camera.z <= 0)
             return false;
 
-        this.u1 = (this.x1 - camera.x) / (this.z1 - camera.z);
-        this.v1 = (this.y1 - camera.y) / (this.z1 - camera.z);
-        this.u2 = (this.x2 - camera.x) / (this.z2 - camera.z);
-        this.v2 = (this.y2 - camera.y) / (this.z2 - camera.z);
-        this.u3 = (this.x3 - camera.x) / (this.z3 - camera.z);
-        this.v3 = (this.y3 - camera.y) / (this.z3 - camera.z);
+        let PROJECTION_SCALE = 300;
+        this.u1 = (this.x1 - camera.x) / (this.z1 - camera.z) * PROJECTION_SCALE;
+        this.v1 = (this.y1 - camera.y) / (this.z1 - camera.z) * PROJECTION_SCALE;
+        this.u2 = (this.x2 - camera.x) / (this.z2 - camera.z) * PROJECTION_SCALE;
+        this.v2 = (this.y2 - camera.y) / (this.z2 - camera.z) * PROJECTION_SCALE;
+        this.u3 = (this.x3 - camera.x) / (this.z3 - camera.z) * PROJECTION_SCALE;
+        this.v3 = (this.y3 - camera.y) / (this.z3 - camera.z) * PROJECTION_SCALE;
 
         if(printResults){
             console.log(`u1: ${this.u1}, v1: ${this.v1}\nu2: ${this.u2}, v2: ${this.v2}\nu3: ${this.u3}, v3: ${this.v3}`);
@@ -243,6 +244,35 @@ class Triangle{
         this.y3 = (this.y3 * cos) + (-1 * sin * this.z3);
         this.z3 = (yHold * sin) + (cos * this.z3);
     }
+    rotateY(theta){
+        // Calculate the weights for all of the rotations in the matrix
+        let cos = Math.cos(theta * (Math.PI / 180));
+        let sin = Math.sin(theta * (Math.PI / 180));
+        // Also set up Y holds bc Y changes during calculation
+        let xHold = -999;
+        let zHold = -999; // One of these can be avoided but I lowk cant be bothered
+
+        // Operations pre-calculated to app to vector. Apply to all vectors X does not change
+        
+        // V1
+        xHold = this.x1;
+        zHold = this.z1;
+        this.x1 = (xHold * cos) + (zHold * sin);
+        this.y1 = this.y1;
+        this.z1 = (xHold * -1 * sin) + (zHold * cos);
+        // V2
+        xHold = this.x2;
+        zHold = this.z2;
+        this.x2 = (xHold * cos) + (zHold * sin);
+        this.y2 = this.y2;
+        this.z2 = (xHold * -1 * sin) + (zHold * cos);
+        // V3
+        xHold = this.x3;
+        zHold = this.z3;
+        this.x3 = (xHold * cos) + (zHold * sin);
+        this.y3 = this.y3;
+        this.z3 = (xHold * -1 * sin) + (zHold * cos);
+    }
 
 }
 
@@ -316,6 +346,12 @@ class Pyramid{
         // Each Vector in each triangle should have the rotation applied
         for(let i = 0; i < this.triangles.length; i++){
             this.triangles[i].rotateX(theta);            
+        }
+    }
+    rotateY(theta){
+        // Each Vector in each triangle should have the rotation applied
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateY(theta);            
         }
     }
 
@@ -435,12 +471,63 @@ function gameLoop(){
 }
 
 
+let test3D = new Pyramid(0, 0, 0, 1); // 'unit pyramid'
 function main(){
     const testDepth = 1;
     
-    let test3D = new Pyramid(100, 100, 1, 50);
     // test3D.vectorTranslate({x: 100, y: 0,z: 2});
+    // test3D.draw();
+    test3D.vectorScale({x: 50, y: 50, z:50});
+    test3D.vectorTranslate({x: 100, y: 100, z: 300});
     test3D.draw();
     // gameLoop();
 }
+
+let rotationX = 1;
+let rotationY = 1;
+
+window.addEventListener('keydown', (event) => {
+    // Check for either the Right Arrow or the physical 'D' key
+    if (event.key === 'ArrowUp' || event.code === 'KeyW') {
+        clearDisplay();
+        test3D = new Pyramid(0, 0, 0, 1); // 'unit pyramid'
+        test3D.rotateX(rotationX);
+        test3D.rotateY(rotationY);
+        test3D.vectorScale({x: 50, y: 50, z:50});
+        test3D.vectorTranslate({x: 100, y: 100, z: 300});
+        test3D.draw();
+        rotationX += 2
+    }
+    if (event.key === 'ArrowRight' || event.code === 'KeyD') {
+        clearDisplay();
+        test3D = new Pyramid(0, 0, 0, 1); // 'unit pyramid'
+        test3D.rotateX(rotationX);
+        test3D.rotateY(rotationY);
+        test3D.vectorScale({x: 50, y: 50, z:50});
+        test3D.vectorTranslate({x: 100, y: 100, z: 300});
+        test3D.draw();
+        rotationY += 2
+    }
+    if (event.key === 'ArrowDown' || event.code === 'KeyS') {
+        clearDisplay();
+        test3D = new Pyramid(0, 0, 0, 1); // 'unit pyramid'
+        test3D.rotateX(rotationX);
+        test3D.rotateY(rotationY);
+        test3D.vectorScale({x: 50, y: 50, z:50});
+        test3D.vectorTranslate({x: 100, y: 100, z: 300});
+        test3D.draw();
+        rotationX -= 2
+    }
+    if (event.key === 'ArrowLeft' || event.code === 'KeyA') {
+        clearDisplay();
+        test3D = new Pyramid(0, 0, 0, 1); // 'unit pyramid'
+        test3D.rotateX(rotationX);
+        test3D.rotateY(rotationY);
+        test3D.vectorScale({x: 50, y: 50, z:50});
+        test3D.vectorTranslate({x: 100, y: 100, z: 300});
+        test3D.draw();
+        rotationY -= 2
+    }
+});
+
 main();
