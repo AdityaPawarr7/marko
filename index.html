@@ -3,14 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My App</title>
-</head>
-<body style="display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; background-color:slategray;">
-    <canvas id="canvas"></canvas>
-    <!-- Link your entry JavaScript file here -->
-    
-</body>
+    <title>Project 1- Pinhole Camera, Rasterized Display</title>
+    <style>
+        body{
+          font-family: sans-serif;
+          background-color: #1e1e2e;
+          color: white;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          margin: 0;
+          text-align: center;
+        }
+        nav{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 24px;
+        }
+        nav a{
+            display: block;
+            padding: 16px 24px;
+            background-color: #9bbc0f;
+            color: 0f3f0f;
+            text-decoration: none;
+            font-weight: bold;
+            Border-radius: 4px;
+        }
+        nav a:hover{
+            background-color: #b5d02f;
+        }
+    </style>
 
-<script src="index.js"></script>
+    <body>
+        <header>
+            <h1>Project 1- Pinhole Camera, Rasterized Display</h1>
+            <p> A simple implementation of a pinhole camera model and rasterized display </p>
+            <p> by Aditya Pawar & Cameron Pocisk</p>
+            <p> Select a level below- each opens as its own page.</p>
+        </header>
 
+        <nav>
+            <a href="level0.html">Level 0<br> Cube + Camera</a>
+            <a href="level1.html">Level 1 <br> Wireframe, Pinhole Camera</a>
+            <a href="level2.html">Level 2<br> Pixel Raster Game</a>
+            <a href="level3.html">Level 3<br> Triangles + Fill </a>
+         
+        </nav>
+    </body>
 </html>
