@@ -1,10 +1,13 @@
 # Project Documentation: 
 By Cameron Pocisk and Aditya Pawar
-# Introduciton
+# Introduction
 
 ## Game Description 
 
-## Teamwork Stratagies
+## Teamwork Strategies
+
+
+# Design
 
 
 # Levels of Implementation
