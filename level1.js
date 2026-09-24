@@ -4,8 +4,8 @@ const COLUMN_SIZE = 320;
 const NEAR_CLIP = 10;
 const camera = {x: 0, y: 0, z: 0};
 const MAX_RENDER_DISTANCE= 7050;
-const PROJECTION_SCALE = 60; // scaled down from index.js's 300, proportional to
-                              // this buffer being 1/5th the width (320 vs 1600)
+const PROJECTION_SCALE = 60; 
+                            
 let zoomLevel = 1.0; // This will be used to scale the camera's projection
 
 //Track Segements
@@ -51,8 +51,6 @@ const ctx = canvas.getContext('2d');
 const PIXEL_SIZE = 5;
 const BACKGROUND_COLOR = "#9bbc0f";
 const ON_COLOR = "#0f380f";
-const ALTERNATE_ON = "#8bac0f";
-const ALTERNATE_ON_TWO = "#306230";
 
 const FONT = {
     'S': [ {x1:0,y1:4,x2:2,y2:4}, {x1:0,y1:4,x2:0,y2:2}, {x1:0,y1:2,x2:2,y2:2}, {x1:2,y1:2,x2:2,y2:0}, {x1:2,y1:0,x2:0,y2:0} ],
@@ -62,19 +60,11 @@ const FONT = {
     'E': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:4}, {x1:0,y1:2,x2:2,y2:2}, {x1:0,y1:0,x2:2,y2:0} ],
     'L': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:0,x2:2,y2:0} ],
     'C': [ {x1:2,y1:4,x2:0,y2:4}, {x1:0,y1:4,x2:0,y2:0}, {x1:0,y1:0,x2:2,y2:0} ],
-    'M': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:1,y2:2}, {x1:1,y1:2,x2:2,y2:4}, {x1:2,y1:4,x2:2,y2:0} ],
-    'K': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:2,x2:2,y2:4}, {x1:0,y1:2,x2:2,y2:0} ],
-    'O': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:4}, {x1:2,y1:4,x2:2,y2:0}, {x1:2,y1:0,x2:0,y2:0} ],
-    'W': [ {x1:0,y1:4,x2:0,y2:0}, {x1:0,y1:0,x2:1,y2:2}, {x1:1,y1:2,x2:2,y2:0}, {x1:2,y1:0,x2:2,y2:4} ],
-    'V': [ {x1:0,y1:4,x2:1,y2:0}, {x1:1,y1:0,x2:2,y2:4} ],
-    'P': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:4}, {x1:2,y1:4,x2:2,y2:2}, {x1:2,y1:2,x2:0,y2:2} ],
-    'U': [ {x1:0,y1:4,x2:0,y2:0}, {x1:0,y1:0,x2:2,y2:0}, {x1:2,y1:0,x2:2,y2:4} ],
-    'N': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:0}, {x1:2,y1:0,x2:2,y2:4} ],
     ' ': []
 };
-
 // This class will be used to draw on the 320x200 grid
 // Via the 5 pixel by 5 pixel squares on the canvas.
+
 class displayGrid{
     constructor(){
         this.displayMatrix = Array.from({ length: ROW_SIZE }, () =>
@@ -125,11 +115,19 @@ function projectInstance(instance){
 }
 
 function drawWireframe(projectedVertices, edges){
+    ctx.strokeStyle = "white";
+    ctx.lineWidth=2;
     for(let i = 0; i < edges.length; i++){
-        let from = projectedVertices[edges[i][0]];
-        let to = projectedVertices[edges[i][1]];
-        if(!from || !to) continue; // skip edges touching an unprojectable vertex
-        makePixelatedLine(Math.round(from.u), Math.round(from.v), Math.round(to.u), Math.round(to.v));
+        const from=projectedVertices[edges[i][0]];
+        const to=projectedVertices[edges[i][1]];
+
+        if(!from || !to) continue; // skip if either vertex is undefined
+
+        ctx.beginPath();
+        ctx.moveTo(from.u * PIXEL_SIZE, canvas.height - from.v * PIXEL_SIZE);
+        ctx.lineTo(to.u * PIXEL_SIZE, canvas.height - to.v * PIXEL_SIZE);
+        ctx.stroke();
+
     }
 }
 
@@ -448,7 +446,6 @@ function drawCursor(x, y){
     makePixelatedLine(x, y+4, x+3, y+2);
     makePixelatedLine(x+3, y+2, x, y);
 }
-
 function makePixelatedLine(x1, y1, x2, y2){
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -475,7 +472,6 @@ function makePixelatedLine(x1, y1, x2, y2){
         }
     }
 }
-
 function drawTriangle(px1, py1, px2, py2, px3, py3){
     // Step 1: Get the bounding Box
     xMin = Math.min(px1, px2, px3);
@@ -491,6 +487,7 @@ function drawTriangle(px1, py1, px2, py2, px3, py3){
             console.log(`Checking Triangle Bounding Box (${x}, ${y})`);
 
             barycentricHold = findBarycentricCoordinates(px1, py1, px2, py2, px3, py3, x, y, wholeArea);
+            console.log(barycentricHold);
             // Step 3: For each pixel, determine if it is in bounds with Barycentric Coordiantes
             if(barycentricHold.a < 0 || barycentricHold.b < 0 || barycentricHold.c < 0){
                 // (Skip) Do not draw pixels with a negative barycentric coord. 
@@ -511,18 +508,21 @@ function findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y, vx, vy, wholeA
     if(wholeArea == null){
         wholeArea = Math.abs(getTriangleArea(p1x, p1y, p2x, p2y, p3x, p3y)); // needed?
     }
-    // console.log(`Whole area: ${wholeArea}`)
+    console.log(`Whole area: ${wholeArea}`)
 
     // Find a p2 -> V -> p3
     const aArea = getTriangleArea(p2x, p2y, vx, vy, p3x, p3y);
+    console.log(`aArea: ${aArea}`);
 
     // Find b p1 -> p3 -> V
     const bArea = getTriangleArea(p1x, p1y, p3x, p3y, vx, vy);
+    console.log(`bArea: ${bArea}`);
 
     // Find c P1 -> V -> p2 
     const cArea = getTriangleArea(p1x, p1y, vx, vy, p2x, p2y);
+    console.log(`cArea: ${cArea}`);
 
-    console.log(`a:${aArea} b${bArea} c:${cArea} / ${wholeArea}`);
+    console.log(`Sum of areas: ${aArea + bArea + cArea} / ${wholeArea}`);
 
     return {a: aArea/wholeArea, b: bArea/wholeArea, c: cArea/wholeArea};
 }
@@ -544,7 +544,7 @@ const display = new displayGrid();
 const coloredSet = new Set(); // This may be needed for performance idk
 const cat = new CatHead(0, 0, 0, CAT_SCALE); // cat defined. 
 const catBody = new CatBody(0, 0, 0, CAT_SCALE); // cat body defined.
-let gameState = "MENU"; // "MENU" | "CHARACTER_SELECT" | "PLAYING"
+let gameState = "PLAYING"; // "MENU" | "CHARACTER_SELECT" | "PLAYING"
 
 const trackSegments = [];
 for(let i = 0; i < TRACK_SEGMENT_COUNT; i++){
@@ -563,41 +563,8 @@ for(let i = 0; i < OBSTACLE_COUNT; i++){
     obstacles.push(obstacle);
 }
 
-const menuOptions = [
-    { label: "START", x: 100, y: 80 },
-    { label: "SELECT CAT", x: 100, y: 100 },
-];
-let selectedOption = 0;
 
-function handleMenuInput(key){
-    if(key === "ArrowUp"){
-        selectedOption = (selectedOption - 1 + menuOptions.length) % menuOptions.length;
-        console.log(`Selected option: ${selectedOption}`);
-    }
-    else if(key === "ArrowDown"){
-        selectedOption = (selectedOption + 1) % menuOptions.length;
-        console.log(`Selected option: ${selectedOption}`);
-    }
-    else if(key === "Enter"){
-        const chosen = menuOptions[selectedOption].label;
-        console.log(`Chose: ${chosen}`);
-        if(chosen === "START"){
-            gameState = "PLAYING";
-        }
-        else if(chosen === "SELECT CAT"){
-            gameState = "CHARACTER_SELECT";
-        }
-        console.log(`gameState is now: ${gameState}`);
-    }
-}
 
-function handleCharacterSelectInput(key){
-    // We'll fill this in next step
-    if(key === "Escape"){
-        gameState = "MENU";
-        console.log("Escaped back to menu");
-    }
-}
 
 function handleGameInput(key){
     if(key === "Escape"){
@@ -695,34 +662,14 @@ function updateGame(){
 }
 
 function draw(){
-    clearDisplay();
+    ctx.fillStyle = BACKGROUND_COLOR;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if(gameState === "MENU") drawMenu();
-    else if(gameState === "CHARACTER_SELECT") drawCharacterSelect();
-    else if(gameState === "PLAYING") drawGame();
+    if(gameState="PLAYING")drawGame();
 
-    display.render();
 }
 
-function drawMenu(){
-    // Title banner
-    drawText("MARKO", 110, 172);
-    makePixelatedLine(105, 166, 134, 166);
 
-    menuOptions.forEach((option, index) => {
-        drawText(option.label, option.x, option.y);
-        if(index === selectedOption){
-            drawCursor(option.x - 6, option.y);
-        }
-    });
-
-    // Controls / instructions
-    drawText("ARROWS MOVE", 60, 45);
-    drawText("SPACE SWAT", 60, 34);
-    drawText("P PAUSE", 60, 23);
-    drawText("ESC MENU", 60, 12);
-}
-function drawCharacterSelect(){}
 
 function drawGame(){
 

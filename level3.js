@@ -51,8 +51,6 @@ const ctx = canvas.getContext('2d');
 const PIXEL_SIZE = 5;
 const BACKGROUND_COLOR = "#9bbc0f";
 const ON_COLOR = "#0f380f";
-const ALTERNATE_ON = "#8bac0f";
-const ALTERNATE_ON_TWO = "#306230";
 
 const FONT = {
     'S': [ {x1:0,y1:4,x2:2,y2:4}, {x1:0,y1:4,x2:0,y2:2}, {x1:0,y1:2,x2:2,y2:2}, {x1:2,y1:2,x2:2,y2:0}, {x1:2,y1:0,x2:0,y2:0} ],
@@ -72,22 +70,33 @@ const FONT = {
     'N': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:0}, {x1:2,y1:0,x2:2,y2:4} ],
     ' ': []
 };
-
 // This class will be used to draw on the 320x200 grid
 // Via the 5 pixel by 5 pixel squares on the canvas.
+
 class displayGrid{
     constructor(){
         this.displayMatrix = Array.from({ length: ROW_SIZE }, () =>
             Array.from({ length: COLUMN_SIZE }, () => BACKGROUND_COLOR)
         );
+        this.depthMatrix= Array.from({ length: ROW_SIZE }, () =>
+            Array.from({ length: COLUMN_SIZE }, () => Infinity)
+        );
     }
 
     colorPixel(x, y, color = ON_COLOR){
         if(x < 0 || x >= COLUMN_SIZE || y < 0 || y >= ROW_SIZE){
-            //console.log("Pixel was outside of drawable range, skipping");
             return;
         }
         this.displayMatrix[ROW_SIZE-1 - y][x] = color;
+    }
+
+    colorPixelDepth(x, y, depth, color){
+        if(x < 0 || x >= COLUMN_SIZE || y < 0 || y >= ROW_SIZE) return;
+        const row= ROW_SIZE - 1 - y;
+        if(depth < this.depthMatrix[row][x]){
+            this.depthMatrix[row][x] = depth;
+            this.displayMatrix[row][x] = color;
+        }
     }
 
     render(){
@@ -119,6 +128,7 @@ function projectInstance(instance){
         projectedVertices.push({
             u: newU + COLUMN_SIZE / 2,
             v: newV + ROW_SIZE / 2,
+            depth: relativeCamVert.z,
         });
     }
     return projectedVertices;
@@ -289,56 +299,65 @@ class CatBody{
     }
 
     draw(){
-        // Back view — no face details (no eyes/whiskers/mouth), since the
-        // camera is behind the cat. 
-        this.vertices = [
-            // Ears + head top
-            { x: -4, y: 14, z: 0 },  // 0: left ear tip
-            { x: -6, y: 8, z: 0 },   // 1: left ear outer base
-            { x: -2, y: 8, z: 0 },   // 2: left ear inner base
-            { x: 0, y: 9, z: 0 },    // 3: head top center
-            { x: 2, y: 8, z: 0 },    // 4: right ear inner base
-            { x: 6, y: 8, z: 0 },    // 5: right ear outer base
-            { x: 4, y: 14, z: 0 },   // 6: right ear tip
+            // Back view — no face details (no eyes/whiskers/mouth), since the
+    // camera is behind the cat.
+    this.vertices = [
+        // Ears + head top
+        { x: -4, y: 14, z: 0 },  // 0: left ear tip
+        { x: -6, y: 8, z: 0 },   // 1: left ear outer base
+        { x: -2, y: 8, z: 0 },   // 2: left ear inner base
+        { x: 0, y: 9, z: 0 },    // 3: head top center
+        { x: 2, y: 8, z: 0 },    // 4: rig
+        { x: 6, y: 8, z: 0 },    // 5: right ear outer base
+        { x: 4, y: 14, z: 0 },   // 6: rig
 
-            // Right side: cheek -> shoulder -> body -> hip
-            { x: 6, y: 3, z: 0 },    // 7: right cheek
-            { x: 5, y: 0, z: 0 },    // 8: right shoulder
-            { x: 5, y: -4, z: 0 },   // 9: right side
-            { x: 4, y: -7, z: 0 },   // 10: right hip
+        // Right side: cheek -> shoulder -
+        { x: 6, y: 3, z: 0 },    // 7: right cheek
+        { x: 5, y: 0, z: 0 },    // 8: rig
+        { x: 5, y: -4, z: 0 },   // 9: right side
+        { x: 4, y: -7, z: 0 },   // 10: ri
 
-            // Tail (branches off the right hip)
-            { x: 4, y: -6, z: 0 },   // 11: tail base
-            { x: 7, y: -3, z: 0 },   // 12: tail mid
-            { x: 9, y: 1, z: 0 },    // 13: tail curve
-            { x: 8, y: 5, z: 0 },    // 14: tail tip
+        // Tail (branches off the right hi
+        { x: 4, y: -6, z: 0 },   // 11: tail base
+        { x: 7, y: -3, z: 0 },   // 12: ta
+        { x: 9, y: 1, z: 0 },    // 13: tail curve
+        { x: 8, y: 5, z: 0 },    // 14: ta
 
-            // Right leg
-            { x: 3, y: -10, z: 0 },  // 15: right leg
-            { x: 2, y: -11, z: 0 },  // 16: right paw
+        // Right leg
+        { x: 3, y: -10, z: 0 },  // 15: right leg
+        { x: 2, y: -11, z: 0 },  // 16: ri
 
-            // Left leg
-            { x: -3, y: -10, z: 0 }, // 17: left leg
-            { x: -2, y: -11, z: 0 }, // 18: left paw
+        // Left leg
+        { x: -3, y: -10, z: 0 }, // 17: left leg
+        { x: -2, y: -11, z: 0 }, // 18: le
 
-            // Left side: hip -> body -> shoulder -> cheek
-            { x: -4, y: -7, z: 0 },  // 19: left hip
-            { x: -5, y: -4, z: 0 },  // 20: left side
-            { x: -5, y: 0, z: 0 },   // 21: left shoulder
-            { x: -6, y: 3, z: 0 },   // 22: left cheek
-        ];
+        // Left side: hip -> body -> shoul
+        { x: -4, y: -7, z: 0 },  // 19: left hip
+        { x: -5, y: -4, z: 0 },  // 20: le
+        { x: -5, y: 0, z: 0 },   // 21: left shoulder
+        { x: -6, y: 3, z: 0 },   // 22: le
 
-        this.edges = [
-            [1,0], [0,2], [2,3], [3,4], [4,6], [6,5], // ear
-            [5,7], [7,8], [8,9], [9,10],              // right side down to hip
-            [10,11], [11,12], [12,13], [13,14],       // tai
-            [10,15], [15,16],                         // right leg to paw
-            [1,22], [22,21], [21,20], [20,19],        // lef
-            [19,17], [17,18],                         // left leg to paw
-        ];
-        
-        const projected = projectInstance(this);
-        drawWireframe(projected, this.edges);
+        { x: 0, y: 4, z: 0 },    // 23: fier
+    ];
+
+    this.triangles= [
+        { indices: [23,0,2], color: "#c78a4a" }, { indices: [23,2,3], color: "#c78a4a" },
+        { indices: [23,3,4], color: "#c78a4a" }, { indices: [23,4,6], color: "#c78a4a" },
+        { indices: [23,6,5], color: "#c78a4a" }, { indices: [23,5,7], color: "#c78a4a" },
+        { indices: [23,7,8], color: "#c78a4a" }, { indices: [23,8,9], color: "#c78a4a" }, 
+        { indices: [23,9,10], color: "#c78a4a" }, { indices: [23,10,19], color: "#c78a4a" },
+        { indices: [23,19,20], color: "#c78a4a" }, { indices: [23,20,21], color: "#c78a4a" },
+        { indices: [23,21,22], color: "#c78a4a" }, { indices: [23,22,1], color: "#c78a4a" },
+        { indices: [23,1,0], color: "#c78a4a" },
+    ]
+    this.decorationEdges = [
+        [10,11], [11,12], [12,13], [13,14],
+        [10,15], [15,16],                   // right leg to paw
+        [19,17], [17,18],
+    ];
+
+    drawTriangles(this);
+    drawWireframe(projectInstance(this), this.decorationEdges);
     }
 }
 
@@ -378,8 +397,17 @@ class Obstacle{
             [4,6], [5,7], // back face X-brace
         ];
 
+        this.triangles = [
+            { indices: [0,1,2], color: "#b33939" }, { indices: [0,2,3], color: "#b33939" }, // front
+            { indices: [5,4,7], color: "#1e3d59" }, { indices: [5,7,6], color: "#1e3d59" }, // back
+            { indices: [4,0,3], color: "#2e8b57" }, { indices: [4,3,7], color: "#2e8b57" }, // left
+            { indices: [1,5,6], color: "#c9a227" }, { indices: [1,6,2], color: "#c9a227" }, // right
+            { indices: [3,2,6], color: "#cccccc" }, { indices: [3,6,7], color: "#cccccc" }, // top
+            { indices: [4,5,1], color: "#444444" }, { indices: [4,1,0], color: "#444444" }, // bottom
+        ]
+
         const projected = projectInstance(this);
-        drawWireframe(projected, this.edges);
+        drawTriangles(this); 
     }
 }
 
@@ -412,19 +440,19 @@ class TrackSegment{
         { x: LANE_WIDTH / 2, y: -TRACK_WALL_HEIGHT, z: 5 },   // 11: back-right-divider
     ];
 
-    this.edges = [ // 0,1 and 4,5 deleted
-        [0,3], [1,2],
-        [4,7], [5,6],
-        [0,4], [1,5], [2,6], [3,7],
-        [8,10], [9,11]
+
+    this.triangles = [
+        { indices: [0,5,1], color: "#6b6b6b" }, { indices: [0,4,5], color: "#6b6b6b" }, // floor 
+        { indices: [0,3,7], color: "#3a3a5e" }, { indices: [0,7,4], color: "#3a3a5e" }, // left wall
+            { indices: [1,6,2], color: "#3a3a5e" }, { indices: [1,5,6], color: "#3a3a5e" }, // right wall 
     ];
 
-    if(this.showEndCap){
-        this.edges.push([4,5]);
-    }
+    this.laneDividerEdges = [[8,10], [9,11]];
 
     const projected = projectInstance(this);
-    drawWireframe(projected, this.edges);
+    drawTriangles(this);
+    drawWireframe(projectInstance(this), this.laneDividerEdges);
+  
     }
 }
 
@@ -448,7 +476,6 @@ function drawCursor(x, y){
     makePixelatedLine(x, y+4, x+3, y+2);
     makePixelatedLine(x+3, y+2, x, y);
 }
-
 function makePixelatedLine(x1, y1, x2, y2){
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -475,7 +502,6 @@ function makePixelatedLine(x1, y1, x2, y2){
         }
     }
 }
-
 function drawTriangle(px1, py1, px2, py2, px3, py3){
     // Step 1: Get the bounding Box
     xMin = Math.min(px1, px2, px3);
@@ -491,6 +517,7 @@ function drawTriangle(px1, py1, px2, py2, px3, py3){
             console.log(`Checking Triangle Bounding Box (${x}, ${y})`);
 
             barycentricHold = findBarycentricCoordinates(px1, py1, px2, py2, px3, py3, x, y, wholeArea);
+            console.log(barycentricHold);
             // Step 3: For each pixel, determine if it is in bounds with Barycentric Coordiantes
             if(barycentricHold.a < 0 || barycentricHold.b < 0 || barycentricHold.c < 0){
                 // (Skip) Do not draw pixels with a negative barycentric coord. 
@@ -505,27 +532,46 @@ function drawTriangle(px1, py1, px2, py2, px3, py3){
 
 }
 
-// THIS ALSO NEEDS TO BE CLOCKWISE //ax,  ay,  bx,  by,  cx,  cy,  vx, vy
-function findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y, vx, vy, wholeArea){
-    // Step 1: Find the area of the whole triangle
-    if(wholeArea == null){
-        wholeArea = Math.abs(getTriangleArea(p1x, p1y, p2x, p2y, p3x, p3y)); // needed?
+function fillTriangle(p1,p2,p3,color){
+    if(!p1 || !p2 || !p3) return;
+
+    const uMin = Math.max(0, Math.floor(Math.min(p1.u, p2.u, p3.u)));
+    const uMax= Math.min(COLUMN_SIZE - 1, Math.ceil(Math.max(p1.u, p2.u, p3.u)));
+    const vMin= Math.max(0, Math.floor(Math.min(p1.v, p2.v, p3.v)));
+    const vMax= Math.min(ROW_SIZE - 1, Math.ceil(Math.max(p1.v, p2.v, p3.v)));
+
+    const wholeArea = Math.abs(getTriangleArea(p1.u, p1.v, p2.u, p2.v, p3.u, p3.v));
+
+    if (wholeArea === 0) return; // 
+
+    for(let x= uMin; x <= uMax; x++){
+        for(let y= vMin; y <= vMax; y++){
+            const aArea= getTriangleArea(p2.u, p2.v, x, y, p3.u, p3.v);
+            const bArea= getTriangleArea(p1.u, p1.v, p3.u, p3.v, x, y);
+            const cArea= getTriangleArea(p1.u, p1.v, x, y, p2.u, p2.v);
+            
+            const a= aArea/wholeArea, b= bArea/wholeArea, c= cArea/wholeArea;
+            // barycentric coordinates are negative if the point is outside the triangle
+
+            if(a < 0 || b < 0 || c < 0) continue; // outside triangle
+
+            const depth= a*p1.depth + b*p2.depth + c*p3.depth;
+            display.colorPixelDepth(x, y, depth, color);
+        }
     }
-    // console.log(`Whole area: ${wholeArea}`)
 
-    // Find a p2 -> V -> p3
-    const aArea = getTriangleArea(p2x, p2y, vx, vy, p3x, p3y);
-
-    // Find b p1 -> p3 -> V
-    const bArea = getTriangleArea(p1x, p1y, p3x, p3y, vx, vy);
-
-    // Find c P1 -> V -> p2 
-    const cArea = getTriangleArea(p1x, p1y, vx, vy, p2x, p2y);
-
-    console.log(`a:${aArea} b${bArea} c:${cArea} / ${wholeArea}`);
-
-    return {a: aArea/wholeArea, b: bArea/wholeArea, c: cArea/wholeArea};
 }
+
+function drawTriangles(instance){
+    const projected = projectInstance(instance);
+    for(const tri of instance.triangles){
+        const p1 = projected[tri.indices[0]];
+        const p2 = projected[tri.indices[1]];
+        const p3 = projected[tri.indices[2]];
+        fillTriangle(p1, p2, p3, tri.color);
+    }
+}
+
 
 // https://jtsorlinis.github.io/rendering-tutorial/#:~:text=Area%20of%20a%20triangle%20(aka%20maths)
 // CLOCKWISE ONLY (Way to turn these into clockwise no matter what?)
@@ -536,6 +582,7 @@ function getTriangleArea(px1, py1, px2, py2, px3, py3){
 function clearDisplay(){
     for(let r = 0; r < ROW_SIZE; r++){
         display.displayMatrix[r].fill(BACKGROUND_COLOR);
+        display.depthMatrix[r].fill(Infinity);
     }
 }
 
