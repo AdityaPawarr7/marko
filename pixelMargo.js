@@ -51,6 +51,8 @@ const ctx = canvas.getContext('2d');
 const PIXEL_SIZE = 5;
 const BACKGROUND_COLOR = "#9bbc0f";
 const ON_COLOR = "#0f380f";
+const ALTERNATE_ON = "#8bac0f";
+const ALTERNATE_ON_TWO = "#306230";
 
 const FONT = {
     'S': [ {x1:0,y1:4,x2:2,y2:4}, {x1:0,y1:4,x2:0,y2:2}, {x1:0,y1:2,x2:2,y2:2}, {x1:2,y1:2,x2:2,y2:0}, {x1:2,y1:0,x2:0,y2:0} ],
@@ -70,9 +72,9 @@ const FONT = {
     'N': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:0}, {x1:2,y1:0,x2:2,y2:4} ],
     ' ': []
 };
+
 // This class will be used to draw on the 320x200 grid
 // Via the 5 pixel by 5 pixel squares on the canvas.
-
 class displayGrid{
     constructor(){
         this.displayMatrix = Array.from({ length: ROW_SIZE }, () =>
@@ -446,6 +448,7 @@ function drawCursor(x, y){
     makePixelatedLine(x, y+4, x+3, y+2);
     makePixelatedLine(x+3, y+2, x, y);
 }
+
 function makePixelatedLine(x1, y1, x2, y2){
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -472,6 +475,7 @@ function makePixelatedLine(x1, y1, x2, y2){
         }
     }
 }
+
 function drawTriangle(px1, py1, px2, py2, px3, py3){
     // Step 1: Get the bounding Box
     xMin = Math.min(px1, px2, px3);
@@ -487,7 +491,6 @@ function drawTriangle(px1, py1, px2, py2, px3, py3){
             console.log(`Checking Triangle Bounding Box (${x}, ${y})`);
 
             barycentricHold = findBarycentricCoordinates(px1, py1, px2, py2, px3, py3, x, y, wholeArea);
-            console.log(barycentricHold);
             // Step 3: For each pixel, determine if it is in bounds with Barycentric Coordiantes
             if(barycentricHold.a < 0 || barycentricHold.b < 0 || barycentricHold.c < 0){
                 // (Skip) Do not draw pixels with a negative barycentric coord. 
@@ -508,21 +511,18 @@ function findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y, vx, vy, wholeA
     if(wholeArea == null){
         wholeArea = Math.abs(getTriangleArea(p1x, p1y, p2x, p2y, p3x, p3y)); // needed?
     }
-    console.log(`Whole area: ${wholeArea}`)
+    // console.log(`Whole area: ${wholeArea}`)
 
     // Find a p2 -> V -> p3
     const aArea = getTriangleArea(p2x, p2y, vx, vy, p3x, p3y);
-    console.log(`aArea: ${aArea}`);
 
     // Find b p1 -> p3 -> V
     const bArea = getTriangleArea(p1x, p1y, p3x, p3y, vx, vy);
-    console.log(`bArea: ${bArea}`);
 
     // Find c P1 -> V -> p2 
     const cArea = getTriangleArea(p1x, p1y, vx, vy, p2x, p2y);
-    console.log(`cArea: ${cArea}`);
 
-    console.log(`Sum of areas: ${aArea + bArea + cArea} / ${wholeArea}`);
+    console.log(`a:${aArea} b${bArea} c:${cArea} / ${wholeArea}`);
 
     return {a: aArea/wholeArea, b: bArea/wholeArea, c: cArea/wholeArea};
 }
