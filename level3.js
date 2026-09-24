@@ -1,6 +1,10 @@
 const ROW_SIZE = 200;
 const COLUMN_SIZE = 320;
 
+const DISTANCE_CLOSE = 50;
+const DISTANCE_MEDIUM = 150;
+const DISTANCE_FAR = 300;
+
 const NEAR_CLIP = 10;
 const camera = {x: 0, y: 0, z: 0};
 const MAX_RENDER_DISTANCE= 7050;
@@ -76,7 +80,7 @@ const FONT = {
 class displayGrid{
     constructor(){
         this.displayMatrix = Array.from({ length: ROW_SIZE }, () =>
-            Array.from({ length: COLUMN_SIZE }, () => BACKGROUND_COLOR)
+            Array.from({ length: COLUMN_SIZE }, () => ({color: BACKGROUND_COLOR, depth: Infinity}))
         );
         this.depthMatrix= Array.from({ length: ROW_SIZE }, () =>
             Array.from({ length: COLUMN_SIZE }, () => Infinity)
@@ -87,7 +91,7 @@ class displayGrid{
         if(x < 0 || x >= COLUMN_SIZE || y < 0 || y >= ROW_SIZE){
             return;
         }
-        this.displayMatrix[ROW_SIZE-1 - y][x] = color;
+        this.displayMatrix[ROW_SIZE-1 - y][x].color = color;
     }
 
     colorPixelDepth(x, y, depth, color = ON_COLOR){
@@ -95,14 +99,29 @@ class displayGrid{
         const row= ROW_SIZE - 1 - y;
         if(depth < this.depthMatrix[row][x]){
             this.depthMatrix[row][x] = depth;
-            this.displayMatrix[row][x] = color;
+            this.displayMatrix[row][x].color = color;
         }
+    }
+
+    getPixelDepth(x, y){
+        if(x < 0 || x >= COLUMN_SIZE || y < 0 || y >= ROW_SIZE){
+            console.log("Pixel was outside of drawable range, way outside");
+            return -99999;
+        }
+        const pixel = this.displayMatrix[ROW_SIZE-1 - y][x];
+        // Get any possible pixel color or just make it mad far away
+        if(pixel == null || pixel.depth == null){
+            return -99999;
+        }
+        console.log(`got pixel dpeth: ${pixel.depth}`);
+
+        return pixel.depth;
     }
 
     render(){
         for(let r = 0; r < ROW_SIZE; r++){
             for(let c = 0; c < COLUMN_SIZE; c++){
-                ctx.fillStyle = this.displayMatrix[r][c];
+                ctx.fillStyle = this.displayMatrix[r][c].color;
                 ctx.fillRect(c*PIXEL_SIZE, r*PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
             }
         }
@@ -581,7 +600,7 @@ function getTriangleArea(px1, py1, px2, py2, px3, py3){
 
 function clearDisplay(){
     for(let r = 0; r < ROW_SIZE; r++){
-        display.displayMatrix[r].fill(BACKGROUND_COLOR);
+        display.displayMatrix[r].fill({color: BACKGROUND_COLOR, depth: Infinity});
         display.depthMatrix[r].fill(Infinity);
     }
 }
@@ -815,6 +834,15 @@ function main(){
    
     gameLoop();
 
+    // let unitTriangle = new Triangle(
+    //     0, 0, 1,
+    //     1, 2, 1,
+    //     2, 0, 1,
+    // );
+    // unitTriangle.scale(30);
+    // unitTriangle.vectorTranslate({x: 50, y: 50, z: DISTANCE_MEDIUM});
+    // unitTriangle.draw();
+
     //display.colorPixel(10, 10);
     //makePixelatedLine(0, 0, 319, 199);
     //drawTriangle(50, 50, 100, 100, 150, 50);
@@ -946,19 +974,19 @@ class Triangle{
                 else{
                     // all positive, Draw :)
                     display.colorPixel(u, v, color);
-                    // display.colorPixel(u, v, color);
                     
                     // We need to apply the depth as barycentric coordiantes to get a depth value. 
                     // If a new depth value is > current, draw over. 
-                    let newDepth = barycentricHold.a * this.z1 + barycentricHold.b * this.z2 + barycentricHold.c * this.z3;
-                    let oldDepth = display.getPixelDepth(u, v);
-                    console.log(`new: ${newDepth} < old: ${oldDepth}`);
-                    if(newDepth < oldDepth){ // Hanlde ties? (Low Z mean close)
-                        display.colorPixel(u, v, newDepth, color);
-                    }
-                    else{
-                        console.log(`Skipped drawing step bc new: ${newDepth} < old: ${oldDepth}`);
-                    }
+
+                    // let newDepth = barycentricHold.a * this.z1 + barycentricHold.b * this.z2 + barycentricHold.c * this.z3;
+                    // let oldDepth = display.getPixelDepth(u, v);
+                    // console.log(`new: ${newDepth} < old: ${oldDepth}`);
+                    // if(newDepth < oldDepth){ // Hanlde ties? (Low Z mean close)
+                    //     display.colorPixel(u, v, newDepth, color);
+                    // }
+                    // else{
+                    //     console.log(`Skipped drawing step bc new: ${newDepth} < old: ${oldDepth}`);
+                    // }
                 }
             }
         }
