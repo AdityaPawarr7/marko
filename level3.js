@@ -32,7 +32,7 @@ const GROUND_Y = -TRACK_WALL_HEIGHT * TRACK_SEGMENT_SCALE; // matches TrackSegme
 
 
 // Obstacle Constants
-const OBSTACLE_SCALE = 10;
+const OBSTACLE_SCALE = 18;
 const OBSTACLE_COUNT = 6;
 const OBSTACLE_LOCAL_HALF_DEPTH = 0.5; 
 const SWAT_RANGE = 40;    // how far ahead of the camera you can still swat an obstacle
@@ -45,7 +45,7 @@ const BOB_AMPLITUDE = 0.2;    // how far up/down it moves
 let bobPhase = 0;
 const CAT_FORWARD_OFFSET = 15; // always this far ahead of the camera, in front of view
 const CAT_LANE_OFFSET = LANE_WIDTH / 2; // how far left of camera-center the cat sits
-const FORWARD_SPEED = 0.5;     // world units the camera advances per frame — this is the "running"
+const FORWARD_SPEED = 1;     // world units the camera advances per frame — this is the "running"
 const COLLISION_RANGE = OBSTACLE_LOCAL_HALF_DEPTH * OBSTACLE_SCALE; // it's basically reached you
 
 
@@ -835,6 +835,96 @@ class TrafficCone{
     }
 }
 
+class CardboardBox{
+    // x, y, z = this box's WORLD position (center of the box)
+    // edgeLength = this box's scale factor
+    constructor(x, y, z, edgeLength = 1){
+        // Same plain position/state fields TrafficCone exposes, so game logic
+        // (collisions, swatting, render culling) can treat either the same way.
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.destroyed = false;
+
+        this.triangles = [];
+        // A cube, centered on the origin, so passing a center position here
+        // lines it up the same way TrafficCone/Obstacle did.
+        let v1 = {x: -.5, y: -.5, z: -.5}; // front-bottom-left
+        let v2 = {x: .5, y: -.5, z: -.5};  // front-bottom-right
+        let v3 = {x: .5, y: .5, z: -.5};   // front-top-right
+        let v4 = {x: -.5, y: .5, z: -.5};  // front-top-left
+        let v5 = {x: -.5, y: -.5, z: .5};  // back-bottom-left
+        let v6 = {x: .5, y: -.5, z: .5};   // back-bottom-right
+        let v7 = {x: .5, y: .5, z: .5};    // back-top-right
+        let v8 = {x: -.5, y: .5, z: .5};   // back-top-left
+
+        // Each face of the cube = 2 triangles (6 faces * 2 = 12 triangles)
+        // Front
+        this.triangles.push(new Triangle(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z));
+        this.triangles.push(new Triangle(v3.x, v3.y, v3.z, v4.x, v4.y, v4.z, v1.x, v1.y, v1.z));
+        // Back
+        this.triangles.push(new Triangle(v6.x, v6.y, v6.z, v5.x, v5.y, v5.z, v8.x, v8.y, v8.z));
+        this.triangles.push(new Triangle(v8.x, v8.y, v8.z, v7.x, v7.y, v7.z, v6.x, v6.y, v6.z));
+        // Left
+        this.triangles.push(new Triangle(v5.x, v5.y, v5.z, v1.x, v1.y, v1.z, v4.x, v4.y, v4.z));
+        this.triangles.push(new Triangle(v4.x, v4.y, v4.z, v8.x, v8.y, v8.z, v5.x, v5.y, v5.z));
+        // Right
+        this.triangles.push(new Triangle(v2.x, v2.y, v2.z, v6.x, v6.y, v6.z, v7.x, v7.y, v7.z));
+        this.triangles.push(new Triangle(v7.x, v7.y, v7.z, v3.x, v3.y, v3.z, v2.x, v2.y, v2.z));
+        // Top
+        this.triangles.push(new Triangle(v4.x, v4.y, v4.z, v3.x, v3.y, v3.z, v7.x, v7.y, v7.z));
+        this.triangles.push(new Triangle(v7.x, v7.y, v7.z, v8.x, v8.y, v8.z, v4.x, v4.y, v4.z));
+        // Bottom
+        this.triangles.push(new Triangle(v5.x, v5.y, v5.z, v6.x, v6.y, v6.z, v2.x, v2.y, v2.z));
+        this.triangles.push(new Triangle(v2.x, v2.y, v2.z, v1.x, v1.y, v1.z, v5.x, v5.y, v5.z));
+
+        // Apply the constructor parameters (SCALE THEN TRANSLATE)
+        this.vectorScale({x: edgeLength, y: edgeLength, z: edgeLength});
+        this.vectorTranslate({x: x, y: y, z: z});
+    }
+
+    vectorTranslate(translationVector){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorTranslate(translationVector);
+        }
+    }
+
+    vectorScale(scalingVector){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorScale(scalingVector);
+        }
+    }
+
+    // Theta (Degrees)
+    // This is about the origin so it will not work (in a nice way) after any translation
+    rotateX(theta){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateX(theta);
+        }
+    }
+    rotateY(theta){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateY(theta);
+        }
+    }
+
+    draw(){
+        // Two shades per face (cardboard box brown), same color for both
+        // triangles of a face so it reads as one flat panel.
+        const colors = [
+            "#c8a06a", "#c8a06a", // front
+            "#8f6b3f", "#8f6b3f", // back
+            "#a97f4f", "#a97f4f", // left
+            "#d4b07e", "#d4b07e", // right
+            "#e0c397", "#e0c397", // top
+            "#7a5a35", "#7a5a35", // bottom
+        ];
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].draw(colors[i % colors.length]);
+        }
+    }
+}
+
 
 function drawChar(char, x, y){
     const glyph = FONT[char];
@@ -983,8 +1073,13 @@ const obstacles = [];
 for(let i = 0; i < OBSTACLE_COUNT; i++){
     const lane = Math.floor(Math.random() * 3);
     const obstacleZ = TRACK_START_Z + 150 + i * 90 + Math.random() * 40;
-    const obstacleY = GROUND_Y + OBSTACLE_SCALE;
-    const obstacle = new TrafficCone(LANE_X[lane], obstacleY, obstacleZ, OBSTACLE_SCALE);
+    // TrafficCone/CardboardBox are centered on -0.5..0.5 (half-height = 0.5 * scale),
+    // so the center needs to sit half a scale above the ground for the base to land on it.
+    const obstacleY = GROUND_Y + OBSTACLE_SCALE / 2;
+    // Alternate so half the obstacles are cones and half are boxes.
+    const obstacle = i % 2 === 0
+        ? new TrafficCone(LANE_X[lane], obstacleY, obstacleZ, OBSTACLE_SCALE)
+        : new CardboardBox(LANE_X[lane], obstacleY, obstacleZ, OBSTACLE_SCALE);
     obstacle.lane = lane;
     obstacles.push(obstacle);
 }
