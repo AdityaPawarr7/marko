@@ -457,19 +457,32 @@ class TrackSegment{
 }
 
 
-function drawChar(char, x, y){
+const GLYPH_ADVANCE = 4; // 3-wide glyph + 1 pixel gap, at scale 1
+
+function drawChar(char, x, y, scale = 1){
     const glyph = FONT[char];
     if(!glyph) return; // unknown character, just skip it
     for(const seg of glyph){
-        makePixelatedLine(x + seg.x1, y + seg.y1, x + seg.x2, y + seg.y2);
+        makePixelatedLine(
+            Math.round(x + seg.x1 * scale), Math.round(y + seg.y1 * scale),
+            Math.round(x + seg.x2 * scale), Math.round(y + seg.y2 * scale)
+        );
     }
 }
 
-function drawText(str, x, y){
-    const CHAR_WIDTH = 4; // 3-wide glyph + 1 pixel gap
+function drawText(str, x, y, scale = 1){
+    const charWidth = GLYPH_ADVANCE * scale;
     for(let i = 0; i < str.length; i++){
-        drawChar(str[i], x + i*CHAR_WIDTH, y);
+        drawChar(str[i], x + i*charWidth, y, scale);
     }
+}
+
+function textWidth(str, scale = 1){
+    return str.length * GLYPH_ADVANCE * scale - scale; // no trailing gap after the last char
+}
+
+function centeredX(str, scale = 1){
+    return Math.round((COLUMN_SIZE - textWidth(str, scale)) / 2);
 }
 
 function drawCursor(x, y){
@@ -611,8 +624,8 @@ for(let i = 0; i < OBSTACLE_COUNT; i++){
 }
 
 const menuOptions = [
-    { label: "START", x: 100, y: 80 },
-    { label: "SELECT CAT", x: 100, y: 100 },
+    { label: "START", y: 80 },
+    //{ label: "SELECT CAT", y: 100 },
 ];
 let selectedOption = 0;
 
@@ -752,14 +765,19 @@ function draw(){
 }
 
 function drawMenu(){
-    // Title banner
-    drawText("MARKO", 110, 172);
-    makePixelatedLine(105, 166, 134, 166);
+    // Title banner, drawn bigger than the rest of the menu text
+    const TITLE_SCALE = 3;
+    const title = "MARKO";
+    const titleY = 172;
+    const titleX = centeredX(title, TITLE_SCALE);
+    drawText(title, titleX, titleY, TITLE_SCALE);
+    makePixelatedLine(titleX - 5, titleY - 6, titleX + textWidth(title, TITLE_SCALE) + 5, titleY - 6);
 
     menuOptions.forEach((option, index) => {
-        drawText(option.label, option.x, option.y);
+        const optionX = centeredX(option.label);
+        drawText(option.label, optionX, option.y);
         if(index === selectedOption){
-            drawCursor(option.x - 6, option.y);
+            drawCursor(optionX - 6, option.y);
         }
     });
 
@@ -768,6 +786,16 @@ function drawMenu(){
     drawText("SPACE SWAT", 60, 34);
     drawText("P PAUSE", 60, 23);
     drawText("ESC MENU", 60, 12);
+
+    // Margo's face flanking both sides of the menu
+    const FACE_SCALE = 1.5;
+    cat.scale = FACE_SCALE;
+    cat.z = 60;
+    cat.y = -12;
+    cat.x = -140; // left side
+    cat.draw();
+    cat.x = 140; // right side
+    cat.draw();
 }
 function drawCharacterSelect(){}
 
