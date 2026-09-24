@@ -3,7 +3,7 @@ By Cameron Pocisk and Aditya Pawar
 # Introduciton
 
 ## Game Description 
-
+    Marko (Named after Adi's cat Koko and Cameron's cat Margo) is a temple-run-like game where you play as Margo or Koko and evade obstacles by evasion or swatting. 
 ## Teamwork Stratagies
 
 
@@ -14,6 +14,12 @@ By Cameron Pocisk and Aditya Pawar
 
 ## Level 1
 ### Making a wireframe Cat (Cam)
+    Our first 'object' was a `catHead` This beast has 48 verticies and > 40 edges.
+    They way that I made this object was 
+    1. Draw a cat head as-usual on graphing Paper
+    2. Find valid verticies and edges where possible (and label them)
+    3. Hard code all of the verticies 'unit verticies' and edges in to the class
+    4. Itterate over verticies and edges to create lines as the draw function.
 
 #### Setting Up Verticies and Edges (Cam)
 #### Multiple Instances (Adi)
