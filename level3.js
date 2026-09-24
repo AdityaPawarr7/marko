@@ -60,6 +60,14 @@ const FONT = {
     'E': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:4}, {x1:0,y1:2,x2:2,y2:2}, {x1:0,y1:0,x2:2,y2:0} ],
     'L': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:0,x2:2,y2:0} ],
     'C': [ {x1:2,y1:4,x2:0,y2:4}, {x1:0,y1:4,x2:0,y2:0}, {x1:0,y1:0,x2:2,y2:0} ],
+    'M': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:1,y2:2}, {x1:1,y1:2,x2:2,y2:4}, {x1:2,y1:4,x2:2,y2:0} ],
+    'K': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:2,x2:2,y2:4}, {x1:0,y1:2,x2:2,y2:0} ],
+    'O': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:4}, {x1:2,y1:4,x2:2,y2:0}, {x1:2,y1:0,x2:0,y2:0} ],
+    'W': [ {x1:0,y1:4,x2:0,y2:0}, {x1:0,y1:0,x2:1,y2:2}, {x1:1,y1:2,x2:2,y2:0}, {x1:2,y1:0,x2:2,y2:4} ],
+    'V': [ {x1:0,y1:4,x2:1,y2:0}, {x1:1,y1:0,x2:2,y2:4} ],
+    'P': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:4}, {x1:2,y1:4,x2:2,y2:2}, {x1:2,y1:2,x2:0,y2:2} ],
+    'U': [ {x1:0,y1:4,x2:0,y2:0}, {x1:0,y1:0,x2:2,y2:0}, {x1:2,y1:0,x2:2,y2:4} ],
+    'N': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:0}, {x1:2,y1:0,x2:2,y2:4} ],
     ' ': []
 };
 // This class will be used to draw on the 320x200 grid
@@ -744,12 +752,22 @@ function draw(){
 }
 
 function drawMenu(){
+    // Title banner
+    drawText("MARKO", 110, 172);
+    makePixelatedLine(105, 166, 134, 166);
+
     menuOptions.forEach((option, index) => {
         drawText(option.label, option.x, option.y);
         if(index === selectedOption){
             drawCursor(option.x - 6, option.y);
         }
     });
+
+    // Controls / instructions
+    drawText("ARROWS MOVE", 60, 45);
+    drawText("SPACE SWAT", 60, 34);
+    drawText("P PAUSE", 60, 23);
+    drawText("ESC MENU", 60, 12);
 }
 function drawCharacterSelect(){}
 
