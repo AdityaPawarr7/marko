@@ -1,6 +1,10 @@
 const ROW_SIZE = 200;
 const COLUMN_SIZE = 320;
 
+const DISTANCE_CLOSE = 50;
+const DISTANCE_MEDIUM = 150;
+const DISTANCE_FAR = 300;
+
 const matrix = document.getElementById('pixelMatrix');
 const camera = {x: 0, y: 0, z: 0};
 // This class will be used to draw on the 320x200 grid
@@ -11,7 +15,7 @@ class displayGrid{
         // Filled with RGB Values {r: red, g:green, b:blue} (black by default)
         // this.displayMatrix = Array.from({ length: ROW_SIZE }, () => Array(COLUMN_SIZE).fill({r: 0, g: 0, b:0}));
         this.displayMatrix = Array.from({ length: ROW_SIZE }, () => 
-            Array.from({ length: COLUMN_SIZE }, () => ({ r: 0, g: 0, b: 0, element: null }))
+            Array.from({ length: COLUMN_SIZE }, () => ({ depth: Infinity, element: null }))
         );
         this.initializeDOMGrid();
         // console.log(this.displayMatrix[199][319]); // Test for value in 'last' pixel
@@ -38,7 +42,7 @@ class displayGrid{
         matrix.appendChild(fragment);
     }
 
-    colorPixel(x, y, color = "#0f380f"){
+    colorPixel(x, y, depth, color = "#0f380f"){
         // Dont mess it up!!!!!
         if(x < 0 || x >= COLUMN_SIZE || y < 0 || y >= ROW_SIZE){
             console.log("Pixel was outside of drawable range, skipping");
@@ -48,10 +52,26 @@ class displayGrid{
         const pixel = this.displayMatrix[ROW_SIZE-1 - y][x];
         // Draw for the on state of gameboy
         pixel.element.style.backgroundColor = color;
+        pixel.depth = depth;
 
         // Since we are dealing w performance, may need to
         // Add the colored pixels to a set so they can reset faster.
         coloredSet.add(pixel); 
+    }
+
+    getPixelDepth(x, y){
+        if(x < 0 || x >= COLUMN_SIZE || y < 0 || y >= ROW_SIZE){
+            console.log("Pixel was outside of drawable range, way outside");
+            return -99999;
+        }
+        const pixel = this.displayMatrix[ROW_SIZE-1 - y][x];
+        // Get any possible pixel color or just make it mad far away
+        if(pixel == null || pixel.depth == null){
+            return -99999;
+        }
+        console.log(`got pixel dpeth: ${pixel.depth}`);
+
+        return pixel.depth;
     }
 
 };
@@ -161,13 +181,17 @@ class Triangle{
 
         this.makeClockwise(); // Do this after translating the vectors
 
-        // Setup The bounding box
+        // Setup The bounding box (CHECK IF I CAN REMOVE COMENTS FOR PERFORMANCE)
         let uMin = Math.floor(Math.min(this.u1, this.u2, this.u3));
+        // uMin = Math.max(uMin, 0);
         let vMin = Math.floor(Math.min(this.v1, this.v2, this.v3));
+        // vMin = Math.max(vMin, 0);
         let uMax = Math.ceil(Math.max(this.u1, this.u2, this.u3));
+        // uMax = Math.min(uMax, ROW_SIZE);
         let vMax = Math.ceil(Math.max(this.v1, this.v2, this.v3));
+        // vMax = Math.min(vMax, COLUMN_SIZE);
 
-        // console.log(`uMin: ${uMin}, vMin: ${vMin}, uMax: ${uMax}, vMax: ${vMax}`);
+        console.log(`uMin: ${uMin}, vMin: ${vMin}, uMax: ${uMax}, vMax: ${vMax}`);
         // Step 2: Start Itterating over the bounding box
         var barycentricHold = 0;
         for(let u = uMin; u <= uMax; u++){
@@ -180,7 +204,19 @@ class Triangle{
                 }
                 else{
                     // all positive, Draw :)
-                    display.colorPixel(u, v, color);
+                    // display.colorPixel(u, v, color);
+                    
+                    // We need to apply the depth as barycentric coordiantes to get a depth value. 
+                    // If a new depth value is > current, draw over. 
+                    let newDepth = barycentricHold.a * this.z1 + barycentricHold.b * this.z2 + barycentricHold.c * this.z3;
+                    let oldDepth = display.getPixelDepth(u, v);
+                    console.log(`new: ${newDepth} < old: ${oldDepth}`);
+                    if(newDepth < oldDepth){ // Hanlde ties? (Low Z mean close)
+                        display.colorPixel(u, v, newDepth, color);
+                    }
+                    else{
+                        console.log(`Skipped drawing step bc new: ${newDepth} < old: ${oldDepth}`);
+                    }
                 }
             }
         }
@@ -422,7 +458,7 @@ function makePixelatedLine(x1, y1, x2, y2){
     for(let i = xStart; i < xEnd; i++){
         // console.log(`Drawing line for (${i}, ${y1 + slope * i})`);
         // Step 3: Draw pixel for the found pixel location.
-        display.colorPixel(i, Math.round(y1 + slope*i));
+        display.colorPixel(i, Math.round(y1 + slope*i), Infinity);
     }
 }
 
@@ -449,7 +485,7 @@ function drawTriangle(px1, py1, px2, py2, px3, py3, color = "#0f380f"){
             }
             else{
                 // all positive, Draw
-                display.colorPixel(x, y, color);
+                display.colorPixel(x, y, Infinity, color);
             }
 
         }
@@ -483,7 +519,9 @@ function findBarycentricCoordinates(p1x, p1y, p2x, p2y, p3x, p3y, vx, vy, wholeA
 }
 
 function clearDisplay(){
-    coloredSet.forEach(value => {value.element.style.backgroundColor = "#9bbc0f";})
+    coloredSet.forEach(value => {value.element.style.backgroundColor = "#9bbc0f";
+        value.depth = Infinity;
+    })
 }
 
 // Gonna see if this works any better later I think
@@ -533,31 +571,84 @@ function main(){
     // A square has 6 sides, Needs 12 triangles
     testShapeTriangles = new Shape([
         // Bottom
-        new Triangle(), // 1 2 4
-        new Triangle(), // 2 3 4
+        new Triangle(sq1.x, sq1.y, sq1.z,
+            sq2.x, sq2.y, sq2.z,
+            sq4.x, sq4.y, sq4.z,
+        ), // 1 2 4
+        new Triangle(sq2.x, sq2.y, sq2.z,
+            sq3.x, sq3.y, sq3.z,
+            sq4.x, sq4.y, sq4.z,
+        ), // 2 3 4
         // Top
-        new Triangle(), // 5 6 8
-        new Triangle(), // 6 7 8
+        new Triangle(sq5.x, sq5.y, sq5.z,
+            sq6.x, sq6.y, sq6.z,
+            sq8.x, sq8.y, sq8.z,
+        ), // 5 6 8
+        new Triangle(sq6.x, sq6.y, sq6.z,
+            sq7.x, sq7.y, sq7.z,
+            sq8.x, sq8.y, sq8.z,
+        ), // 6 7 8
         // Close Side
-        new Triangle(), // 1 5 4
-        new Triangle(), // 5 8 4
+        new Triangle(sq1.x, sq1.y, sq1.z,
+            sq5.x, sq5.y, sq5.z,
+            sq4.x, sq4.y, sq4.z,
+        ), // 1 5 4
+        new Triangle(sq5.x, sq5.y, sq5.z,
+            sq8.x, sq8.y, sq8.z,
+            sq4.x, sq4.y, sq4.z,
+        ), // 5 8 4
         // Far Side
-        new Triangle(), // 2 6 7
-        new Triangle(), // 6 7 3
+        new Triangle(sq2.x, sq2.y, sq2.z,
+            sq6.x, sq6.y, sq6.z,
+            sq7.x, sq7.y, sq7.z,
+        ), // 2 6 7
+        new Triangle(sq6.x, sq6.y, sq6.z,
+            sq7.x, sq7.y, sq7.z,
+            sq3.x, sq3.y, sq3.z,
+        ), // 6 7 3
         // Left Side
-        new Triangle(), // 1 5 2
-        new Triangle(), // 5 6 2
+        new Triangle(sq1.x, sq1.y, sq1.z,
+            sq5.x, sq5.y, sq5.z,
+            sq2.x, sq2.y, sq2.z,
+        ), // 1 5 2
+        new Triangle(sq5.x, sq5.y, sq5.z,
+            sq6.x, sq6.y, sq6.z,
+            sq2.x, sq2.y, sq2.z,
+        ), // 5 6 2
         // Right Side
-        new Triangle(), // 3 4 8
-        new Triangle(), // 4 8 7
+        new Triangle(sq3.x, sq3.y, sq3.z,
+            sq4.x, sq4.y, sq4.z,
+            sq8.x, sq8.y, sq8.z,
+        ), // 3 4 8
+        new Triangle(sq4.x, sq4.y, sq4.z,
+            sq8.x, sq8.y, sq8.z,
+            sq7.x, sq7.y, sq7.z,
+        ), // 4 8 7
     ]);
 
-    // test3D.vectorTranslate({x: 100, y: 0,z: 2});
-    // test3D.draw();
-    test3D.vectorScale({x: 50, y: 50, z:50});
-    test3D.vectorTranslate({x: 100, y: 100, z: 300});
-    test3D.draw();
-    // gameLoop();
+    testShapeTriangles.vectorScale({x: 50, y: 50, z:50});
+    testShapeTriangles.vectorTranslate({x: 100, y: 100, z: 300});
+    testShapeTriangles.draw();
+
+    let unitTriangle = new Triangle(
+        0, 0, 1,
+        1, 2, 1,
+        2, 0, 1,
+    );
+    unitTriangle.scale(30);
+    unitTriangle.vectorTranslate({x: 50, y: 50, z: DISTANCE_MEDIUM});
+
+    
+    let backTriangle = new Triangle(
+        0, 0, 1,
+        1, 2, 1,
+        2, 0, 1,
+    );
+    backTriangle.scale(20);
+    backTriangle.vectorTranslate({x: 120, y: 90, z: DISTANCE_FAR});
+    
+    // backTriangle.draw("#0000FF");
+    // unitTriangle.draw("#FF0000");
 }
 
 main();
