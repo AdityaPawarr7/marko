@@ -90,7 +90,7 @@ class displayGrid{
         this.displayMatrix[ROW_SIZE-1 - y][x] = color;
     }
 
-    colorPixelDepth(x, y, depth, color){
+    colorPixelDepth(x, y, depth, color = ON_COLOR){
         if(x < 0 || x >= COLUMN_SIZE || y < 0 || y >= ROW_SIZE) return;
         const row= ROW_SIZE - 1 - y;
         if(depth < this.depthMatrix[row][x]){
@@ -818,6 +818,284 @@ function main(){
     //display.colorPixel(10, 10);
     //makePixelatedLine(0, 0, 319, 199);
     //drawTriangle(50, 50, 100, 100, 150, 50);
+}
+
+// CAMERON PORTING OVER DRAW CAPABILITIES
+class Triangle{
+    // Member varibles for 2d coordinates
+    u1; u2; u3; v1; v2; v3;
+    constructor(x1, y1, z1, x2, y2, z2, x3, y3, z3){
+        // 3d Coordinates
+        this.x1 = x1;
+        this.y1 = y1;
+        this.z1 = z1;
+        this.x2 = x2;
+        this.y2 = y2;
+        this.z2 = z2;
+        this.x3 = x3;
+        this.y3 = y3;
+        this.z3 = z3;
+    }
+
+    printVerticies(){
+        console.log(`x1: ${parseInt(this.x1)}, y1: ${parseInt(this.y1)}, z1: ${parseInt(this.z1)}\nx2: ${parseInt(this.x2)}, y2: ${parseInt(this.y2)}, z2: ${parseInt(this.z2)}\nx3: ${parseInt(this.x3)}, y3: ${parseInt(this.y3)}, z3: ${parseInt(this.z3)}`);
+    }
+
+    // FULLY GPT GENERATED (Have been struggling with ordering so wanted to try to potentially avoid)
+    makeClockwise() {
+        // Signed 2D area / cross product of the projected triangle
+        const cross =
+            (this.u2 - this.u1) * (this.v3 - this.v1) -
+            (this.v2 - this.v1) * (this.u3 - this.u1);
+
+        // Positive = counter-clockwise
+        // Negative = clockwise
+        if (cross > 0) {
+            // Swap vertex 2 and vertex 3
+            [this.x2, this.x3] = [this.x3, this.x2];
+            [this.y2, this.y3] = [this.y3, this.y2];
+            [this.z2, this.z3] = [this.z3, this.z2];
+
+            [this.u2, this.u3] = [this.u3, this.u2];
+            [this.v2, this.v3] = [this.v3, this.v2];
+        }
+    }
+
+    // https://jtsorlinis.github.io/rendering-tutorial/#:~:text=Area%20of%20a%20triangle%20(aka%20maths)
+    // CLOCKWISE ONLY (Way to turn these into clockwise no matter what?)
+    get2dArea(){
+        return (((this.u2-this.u1)*(this.v3-this.v1))-((this.v2-this.v1)*(this.u3-this.u1))) / 2;
+    }
+
+    // Only works when coords are correctly clockwise
+    getBarycentricCoordinates(u, v){
+        // Step 1: Find the area of the whole triangle
+        let wholeArea = Math.abs(this.get2dArea());
+
+        // Find a p2 -> V -> p3 (Need to call general Triangle Area Formula bc using the verticies Coords)
+        const aArea = getTriangleArea(this.u2, this.v2, u, v, this.u3, this.v3);
+
+        // Find b p1 -> p3 -> V
+        const bArea = getTriangleArea(this.u1, this.v1, this.u3, this.v3, u, v);
+
+        // Find c P1 -> V -> p2 
+        const cArea = getTriangleArea(this.u1, this.v1, u, v, this.u2, this.v2);
+
+        // console.log(`a:${aArea}\nb:${bArea}\nc:${cArea} / ${wholeArea}`);
+        // console.log(`${aArea + bArea + cArea} / ${wholeArea}`)
+
+        // Not gonna port this to a class sorreeee
+        return {a: aArea/wholeArea, b: bArea/wholeArea, c: cArea/wholeArea};
+    }
+
+    translate3dCoordinates(printResults = false){
+        // Translate 3d Coordinates to 2D relative to the camera
+        if(this.z1 - camera.z <= 0 || this.z2 - camera.z <= 0 || this.z3 - camera.z <= 0)
+            return false;
+
+        let PROJECTION_SCALE = 300;
+        this.u1 = (this.x1 - camera.x) / (this.z1 - camera.z) * PROJECTION_SCALE;
+        this.v1 = (this.y1 - camera.y) / (this.z1 - camera.z) * PROJECTION_SCALE;
+        this.u2 = (this.x2 - camera.x) / (this.z2 - camera.z) * PROJECTION_SCALE;
+        this.v2 = (this.y2 - camera.y) / (this.z2 - camera.z) * PROJECTION_SCALE;
+        this.u3 = (this.x3 - camera.x) / (this.z3 - camera.z) * PROJECTION_SCALE;
+        this.v3 = (this.y3 - camera.y) / (this.z3 - camera.z) * PROJECTION_SCALE;
+
+        if(printResults){
+            console.log(`u1: ${this.u1}, v1: ${this.v1}\nu2: ${this.u2}, v2: ${this.v2}\nu3: ${this.u3}, v3: ${this.v3}`);
+        }
+        return true;
+    }
+
+    draw(color = "#0f380f"){
+        this.printVerticies();
+        // Translate the coordinates.
+        let good3dCoordinates = this.translate3dCoordinates();
+
+        if(!good3dCoordinates){
+            // Skip drawing this son (Behind camera)
+            console.log(`Not Drawing Triangle bc z-clipped`);
+            return;
+        }
+
+        this.makeClockwise(); // Do this after translating the vectors
+
+        // Setup The bounding box
+        // Setup The bounding box (CHECK IF I CAN REMOVE COMENTS FOR PERFORMANCE)
+        let uMin = Math.floor(Math.min(this.u1, this.u2, this.u3));
+        // uMin = Math.max(uMin, 0);
+        let vMin = Math.floor(Math.min(this.v1, this.v2, this.v3));
+        // vMin = Math.max(vMin, 0);
+        let uMax = Math.ceil(Math.max(this.u1, this.u2, this.u3));
+        // uMax = Math.min(uMax, ROW_SIZE);
+        let vMax = Math.ceil(Math.max(this.v1, this.v2, this.v3));
+        // vMax = Math.min(vMax, COLUMN_SIZE);
+
+        // console.log(`uMin: ${uMin}, vMin: ${vMin}, uMax: ${uMax}, vMax: ${vMax}`);
+        console.log(`uMin: ${uMin}, vMin: ${vMin}, uMax: ${uMax}, vMax: ${vMax}`);
+        // Step 2: Start Itterating over the bounding box
+        var barycentricHold = 0;
+        for(let u = uMin; u <= uMax; u++){
+            for(let v = vMin; v <= vMax; v++){
+                // console.log(`Drawing Pixel (${u}, ${v})`);
+                barycentricHold = this.getBarycentricCoordinates(u, v);
+                // Step 3: For each pixel, determine if it is in bounds with Barycentric Coordiantes
+                if(barycentricHold.a < 0 || barycentricHold.b < 0 || barycentricHold.c < 0){
+                    // (Skip) Do not draw pixels with a negative barycentric coord. 
+                }
+                else{
+                    // all positive, Draw :)
+                    display.colorPixel(u, v, color);
+                    // display.colorPixel(u, v, color);
+                    
+                    // We need to apply the depth as barycentric coordiantes to get a depth value. 
+                    // If a new depth value is > current, draw over. 
+                    let newDepth = barycentricHold.a * this.z1 + barycentricHold.b * this.z2 + barycentricHold.c * this.z3;
+                    let oldDepth = display.getPixelDepth(u, v);
+                    console.log(`new: ${newDepth} < old: ${oldDepth}`);
+                    if(newDepth < oldDepth){ // Hanlde ties? (Low Z mean close)
+                        display.colorPixel(u, v, newDepth, color);
+                    }
+                    else{
+                        console.log(`Skipped drawing step bc new: ${newDepth} < old: ${oldDepth}`);
+                    }
+                }
+            }
+        }
+        console.log(`Done Drawing Triangle`);
+    }
+
+    // Translations should happen in the update part of game loop, so should apply to 3d
+    scale(scalar){
+        this.x1 *= scalar;
+        this.y1 *= scalar;
+        this.z1 *= scalar;
+        this.x2 *= scalar;
+        this.y2 *= scalar;
+        this.z2 *= scalar;
+        this.x3 *= scalar;
+        this.y3 *= scalar;
+        this.z3 *= scalar;
+    }
+
+    vectorScale(scalingVector){
+        this.x1 *= scalingVector.x;
+        this.y1 *= scalingVector.y;
+        this.z1 *= scalingVector.z;
+        this.x2 *= scalingVector.x;
+        this.y2 *= scalingVector.y;
+        this.z2 *= scalingVector.z;
+        this.x3 *= scalingVector.x;
+        this.y3 *= scalingVector.y;
+        this.z3 *= scalingVector.z;
+    }
+
+    vectorTranslate(translationVector){
+        this.x1 += translationVector.x;
+        this.y1 += translationVector.y;
+        this.z1 += translationVector.z;
+        this.x2 += translationVector.x;
+        this.y2 += translationVector.y;
+        this.z2 += translationVector.z;
+        this.x3 += translationVector.x;
+        this.y3 += translationVector.y;
+        this.z3 += translationVector.z;
+    }
+
+    rotateX(theta){
+        // Calculate the weights for all of the rotations in the matrix
+        let cos = Math.cos(theta * (Math.PI / 180));
+        let sin = Math.sin(theta * (Math.PI / 180));
+        // Also set up Y holds bc Y changes during calculation
+        let yHold = -999;
+
+        // Operations pre-calculated to app to vector. Apply to all vectors X does not change
+        yHold = this.y1
+        this.y1 = (this.y1 * cos) + (-1 * sin * this.z1);
+        this.z1 = (yHold * sin) + (cos * this.z1);
+
+        yHold = this.y2
+        this.y2 = (this.y2 * cos) + (-1 * sin * this.z2);
+        this.z2 = (yHold * sin) + (cos * this.z2);
+
+        yHold = this.y3
+        this.y3 = (this.y3 * cos) + (-1 * sin * this.z3);
+        this.z3 = (yHold * sin) + (cos * this.z3);
+    }
+    rotateY(theta){
+        // Calculate the weights for all of the rotations in the matrix
+        let cos = Math.cos(theta * (Math.PI / 180));
+        let sin = Math.sin(theta * (Math.PI / 180));
+        // Also set up Y holds bc Y changes during calculation
+        let xHold = -999;
+        let zHold = -999; // One of these can be avoided but I lowk cant be bothered
+
+        // Operations pre-calculated to app to vector. Apply to all vectors X does not change
+
+        // V1
+        xHold = this.x1;
+        zHold = this.z1;
+        this.x1 = (xHold * cos) + (zHold * sin);
+        this.y1 = this.y1;
+        this.z1 = (xHold * -1 * sin) + (zHold * cos);
+        // V2
+        xHold = this.x2;
+        zHold = this.z2;
+        this.x2 = (xHold * cos) + (zHold * sin);
+        this.y2 = this.y2;
+        this.z2 = (xHold * -1 * sin) + (zHold * cos);
+        // V3
+        xHold = this.x3;
+        zHold = this.z3;
+        this.x3 = (xHold * cos) + (zHold * sin);
+        this.y3 = this.y3;
+        this.z3 = (xHold * -1 * sin) + (zHold * cos);
+    }
+
+}
+
+// A shape is any grouping of triangles
+class Shape{
+    constructor(triangles){
+        this.triangles = triangles;
+    }
+
+    vectorTranslate(translationVector){
+        // Apparently mapping is slower than itterating
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorTranslate(translationVector);
+        }
+    }
+
+    vectorScale(scalingVector){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorScale(scalingVector);
+        }
+    }
+
+    // Theta (Degrees)
+    // This is about the origin so it will not work (in a nice way) after any translation
+    rotateX(theta){
+        // Each Vector in each triangle should have the rotation applied
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateX(theta);            
+        }
+    }
+    rotateY(theta){
+        // Each Vector in each triangle should have the rotation applied
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateY(theta);            
+        }
+    }
+
+    draw(){
+        console.log(`Drawing Shape`);
+        for(let i = 0; i < this.triangles.length; i++){
+            let randomColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`; // Found online
+            this.triangles[i].draw(randomColor);
+        }
+    }
+
 }
 
 main();
