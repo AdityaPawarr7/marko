@@ -131,7 +131,7 @@ If you do run into an object instead of swatting at it or avoiding it by changin
 - Space - swat the obstacle in front of you
 - P - pause
 - Escape - back to menu
-- + : Zoom In
+- = : Zoom In
 - - : Zoom Out
 
 
