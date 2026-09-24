@@ -2,12 +2,15 @@
 By Cameron Pocisk and Aditya Pawar
 # Introduction
 
+
+# Youtube Video
+
 ## Game Description 
 
 ## Teamwork Strategies
 
 
-# Design
+# Design (Adi and Cameron)
 
 
 # Levels of Implementation
