@@ -100,6 +100,7 @@ class displayGrid{
         if(depth < this.depthMatrix[row][x]){
             this.depthMatrix[row][x] = depth;
             this.displayMatrix[row][x].color = color;
+            this.displayMatrix[row][x].depth = depth;
         }
     }
 
@@ -113,8 +114,8 @@ class displayGrid{
         if(pixel == null || pixel.depth == null){
             return -99999;
         }
-        console.log(`got pixel dpeth: ${pixel.depth}`);
 
+        console.log(`got pixel depth: ${pixel.depth}`);
         return pixel.depth;
     }
 
@@ -600,7 +601,7 @@ function getTriangleArea(px1, py1, px2, py2, px3, py3){
 
 function clearDisplay(){
     for(let r = 0; r < ROW_SIZE; r++){
-        display.displayMatrix[r].fill({color: BACKGROUND_COLOR, depth: Infinity});
+        display.displayMatrix[r] = Array.from({length: COLUMN_SIZE}, () => ({color: BACKGROUND_COLOR, depth: Infinity}));
         display.depthMatrix[r].fill(Infinity);
     }
 }
@@ -820,7 +821,14 @@ function drawGame(){
     catBody.z = camera.z + CAT_FORWARD_OFFSET;
     catBody.draw();
 
-
+    let unitTriangle = new Triangle(
+        0, 0, 1,
+        1, 2, 1,
+        2, 0, 1,
+    );
+    unitTriangle.scale(30);
+    unitTriangle.vectorTranslate({x: 50, y: 50, z: DISTANCE_MEDIUM});
+    unitTriangle.draw();
 }
 
 // I got this off github which is apparently the best way to run a game
@@ -973,16 +981,17 @@ class Triangle{
                 }
                 else{
                     // all positive, Draw :)
-                    display.colorPixel(u, v, color);
+                    // display.colorPixel(u, v, color);
                     
                     // We need to apply the depth as barycentric coordiantes to get a depth value. 
                     // If a new depth value is > current, draw over. 
-
-                    // let newDepth = barycentricHold.a * this.z1 + barycentricHold.b * this.z2 + barycentricHold.c * this.z3;
-                    // let oldDepth = display.getPixelDepth(u, v);
+                    
+                    let newDepth = barycentricHold.a * this.z1 + barycentricHold.b * this.z2 + barycentricHold.c * this.z3;
+                    let oldDepth = display.getPixelDepth(u, v);
+                    display.colorPixelDepth(u, v, newDepth, color);
                     // console.log(`new: ${newDepth} < old: ${oldDepth}`);
                     // if(newDepth < oldDepth){ // Hanlde ties? (Low Z mean close)
-                    //     display.colorPixel(u, v, newDepth, color);
+                    //     display.colorPixelDepth(u, v, newDepth, color);
                     // }
                     // else{
                     //     console.log(`Skipped drawing step bc new: ${newDepth} < old: ${oldDepth}`);
@@ -1123,7 +1132,99 @@ class Shape{
             this.triangles[i].draw(randomColor);
         }
     }
+}
 
+class TrafficCone{
+    constructor(x, y, z, edgeLength = 1){
+        this.triangles = [];
+        // Setup the basic coordinates
+        let topCoordiante = {x: .5, y: 1, z: .5};
+        let v1 = {x: 0, y:0, z:0};
+        let v2 = {x: 0, y:0, z:1};
+        let v3 = {x: 1, y:0, z:1};
+        let v4 = {x: 1, y:0, z:0};
+
+        // Now add all of these as triangles
+        // Bottom (2 triangles for square)
+        this.triangles.push(new Triangle(
+            v1.x, v1.y, v1.z,
+            v2.x, v2.y, v2.z,
+            v3.x, v3.y, v3.z,
+        ));
+        this.triangles.push(new Triangle(
+            v3.x, v3.y, v3.z,
+            v4.x, v4.y, v4.z,
+            v1.x, v1.y, v1.z,
+        ));
+        // Sides
+        this.triangles.push(new Triangle(
+            v1.x, v1.y, v1.z,
+            topCoordiante.x, topCoordiante.y, topCoordiante.z,
+            v2.x, v2.y, v2.z,
+        ));
+        this.triangles.push(new Triangle(
+            v2.x, v2.y, v2.z,
+            topCoordiante.x, topCoordiante.y, topCoordiante.z,
+            v3.x, v3.y, v3.z,
+        ));
+        this.triangles.push(new Triangle(
+            v3.x, v3.y, v3.z,
+            topCoordiante.x, topCoordiante.y, topCoordiante.z,
+            v4.x, v4.y, v4.z,
+        ));
+        this.triangles.push(new Triangle(
+            v4.x, v4.y, v4.z,
+            topCoordiante.x, topCoordiante.y, topCoordiante.z,
+            v1.x, v1.y, v1.z,
+        ));
+
+        // Apply the constructor parameters (SCALE THEN TRANSLATE)
+        // this.rotateX(90);
+        this.vectorScale({x: edgeLength, y: edgeLength, z: edgeLength});
+        this.vectorTranslate({x: x, y: y, z: z});
+    }
+
+    vectorTranslate(translationVector){
+        // Apparently mapping is slower than itterating
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorTranslate(translationVector);
+        }
+    }
+
+    vectorScale(scalingVector){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorScale(scalingVector);
+        }
+    }
+
+    // Theta (Degrees)
+    // This is about the origin so it will not work (in a nice way) after any translation
+    rotateX(theta){
+        // Each Vector in each triangle should have the rotation applied
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateX(theta);            
+        }
+    }
+    rotateY(theta){
+        // Each Vector in each triangle should have the rotation applied
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateY(theta);            
+        }
+    }
+
+    draw(){
+        console.log(`Drawing TrafficCone`);
+        const colors = [
+            "#ff8a00",
+            "#ffa030",
+            "#ffba67",
+            "#ffd4a0",
+            "#ffecd4"
+        ];
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].draw(randomColor);
+        }
+    }
 }
 
 main();
