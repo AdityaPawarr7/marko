@@ -51,6 +51,7 @@ After the scenery was set- we could move onto making the obstacles to render in 
 # Levels of Implementation
 
 ## Level 0
+![alt text](image.png)
 ### Rendering a Wireframe Cube and the basic pipeline 
 
 Level 0 just needed a 3D cube made of vertices and edges on a canvas, with a camera you can move forward/back and left/right using the arrow keys, no rotation. We got that fully working- the only piece we're short on is the on-page header/instructions, which currently only lives on the main menu (index.html) instead of on level0.html itself.
@@ -76,6 +77,7 @@ Those numbers come out small and centered around 0, so we scale them up by the c
 - R - reset the camera back to its starting position
 
 ## Level 1
+![alt text](image-1.png)
 
 Level 1 asked for a real wireframe scene- at least 3 object types built from vertices and edges, multiple instances with their own position and scale, a pinhole camera you can move with keypresses, some kind of user action, and a keypress to reset everything. We hit most of it- 4 object types, all instanced with translate/scale only, and drawn through the same pinhole projection from Level 0. 
 
@@ -96,7 +98,7 @@ For the first cat head wireframe, I applied translations at the start of the con
 
 ### Drawing the Scene (Adi)
 
-For actually getting things on screen in Level 1, we used the inbuilt functions to draw. drawWireframe takes in the projected vertices and edges for an object, and for each edge just does ctx.beginPath(), moveTo() to the first point, lineTo() to the second, and stroke() to paint it. Everything draws in solid white since we never pass a color in, and clearing the screen each frame is just one ctx.fillRect() covering the whole canvas in the background color before the next frame draws.
+For actually getting things on screen in Level 1, we used the built in functions to draw. drawWireframe takes in the projected vertices and edges for an object, and for each edge just does ctx.beginPath(), moveTo() to the first point, lineTo() to the second, and stroke() to paint it. Everything draws in solid white since we never pass a color in, and clearing the screen each frame is just one ctx.fillRect() covering the whole canvas in the background color before the next frame draws.
 
 #### Multiple Instances (Adi)
 
@@ -136,6 +138,7 @@ If you do run into an object instead of swatting at it or avoiding it by changin
 
 
 ## Level 2
+![alt text](image-2.png)
 
 Level 2 asked us to build our own 320x200 pixel grid, write our own line drawing function instead of using the canvas's built in one, and let the user toggle to this version through a different page. We got all of that working- the array, makePixelatedLine, and the page toggle through index.html.
 
@@ -144,8 +147,6 @@ Level 2 asked us to build our own 320x200 pixel grid, write our own line drawing
 #### Cameron Custom Line (primitive) (Cam)
 I was the first to change the line function and I did a very simple step over for the lines. This worekd good when the slope was <= 1
 This line drawing fn just calculated the slope, and then applied the slope over all of the points on the line
-#### Final Custom Line (Adi)
-### Display Methods (Adi)
 #### The Dom Grid (Cam)
 On most of the forks for my development, I was working on a version of the game which was colored by way of thousands of individual HTLM divs in a grid (absolutely no canvas)
 To do this I set up a grid in the HTML, also setup a 320x200 array which would hold the HTML element (and later depth).
@@ -165,14 +166,13 @@ Instead of every object calling makePixelatedLine directly for each of its edges
 
 We set up a 320x200 2D Array (displayMatrix) that stores a color string for every pixel. colorPixel then just writes the given color into that array at (x,y)- flipping y since our coordinate system has its origin in the top left  but we want y=0 at the bottom of our screen. The render function loops through the whole array and draws each entry as it's own 5x5 rectangle with ctx.fillRect which is what turns our array into blocky low-res look on the screen. 
 
-#### The DOM Grid (Cam)
-
-
 ### Clearing (Adi)
 
 Before every frame gets redrawn, clearDisplay() goes through every row in displayMatrix and fills it back witht he background color so nothing from the last frame sticks around. Since it's just a color string and not a object, the fill function is reused.
 
-## Level 3 (Cam)
+## Level 3 
+![alt text](image-3.png)
+
 ### Obstacles (Adi)
 ### 3d Game Logic (Adi)
 ### Triangle Class (Cam)
