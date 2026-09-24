@@ -10,6 +10,9 @@ html, body {
 
 #pixelCanvas{
     aspect-ratio: 320 / 200;
-    width: 100%;
-    height: auto;
+    /* Fit inside the viewport on both axes so a short/wide window scales the
+       canvas down instead of overflowing and getting clipped by the
+       html/body overflow:hidden above. */
+    width: min(100vw, 160vh);
+    height: min(100vh, 62.5vw);
 }

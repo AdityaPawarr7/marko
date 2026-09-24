@@ -72,6 +72,10 @@ const FONT = {
     'P': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:4}, {x1:2,y1:4,x2:2,y2:2}, {x1:2,y1:2,x2:0,y2:2} ],
     'U': [ {x1:0,y1:4,x2:0,y2:0}, {x1:0,y1:0,x2:2,y2:0}, {x1:2,y1:0,x2:2,y2:4} ],
     'N': [ {x1:0,y1:0,x2:0,y2:4}, {x1:0,y1:4,x2:2,y2:0}, {x1:2,y1:0,x2:2,y2:4} ],
+    'Z': [ {x1:0,y1:4,x2:2,y2:4}, {x1:2,y1:4,x2:0,y2:0}, {x1:0,y1:0,x2:2,y2:0} ],
+    'I': [ {x1:0,y1:4,x2:2,y2:4}, {x1:1,y1:4,x2:1,y2:0}, {x1:0,y1:0,x2:2,y2:0} ],
+    '=': [ {x1:0,y1:3,x2:2,y2:3}, {x1:0,y1:1,x2:2,y2:1} ],
+    '-': [ {x1:0,y1:2,x2:2,y2:2} ],
     ' ': []
 };
 // This class will be used to draw on the 320x200 grid
@@ -958,6 +962,14 @@ function drawCursor(x, y){
     makePixelatedLine(x, y+4, x+3, y+2);
     makePixelatedLine(x+3, y+2, x, y);
 }
+
+function drawRect(x1, y1, x2, y2){
+    makePixelatedLine(x1, y1, x2, y1);
+    makePixelatedLine(x2, y1, x2, y2);
+    makePixelatedLine(x2, y2, x1, y2);
+    makePixelatedLine(x1, y2, x1, y1);
+}
+
 function makePixelatedLine(x1, y1, x2, y2){
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -1098,8 +1110,10 @@ for(let i = 0; i < OBSTACLE_COUNT; i++){
 }
 
 const menuOptions = [
-    { label: "START", y: 80 },
-    //{ label: "SELECT CAT", y: 100 },
+    { label: "START", y: 145 },
+    { label: "LEVEL ZERO", y: 130, href: "level0.html" },
+    { label: "LEVEL ONE", y: 115, href: "level1.html" },
+    { label: "LEVEL TWO", y: 100, href: "level2.html" },
 ];
 let selectedOption = 0;
 
@@ -1113,12 +1127,16 @@ function handleMenuInput(key){
         console.log(`Selected option: ${selectedOption}`);
     }
     else if(key === "Enter"){
-        const chosen = menuOptions[selectedOption].label;
-        console.log(`Chose: ${chosen}`);
-        if(chosen === "START"){
+        const chosen = menuOptions[selectedOption];
+        console.log(`Chose: ${chosen.label}`);
+        if(chosen.href){
+            window.location.href = chosen.href;
+            return;
+        }
+        if(chosen.label === "START"){
             gameState = "PLAYING";
         }
-        else if(chosen === "SELECT CAT"){
+        else if(chosen.label === "SELECT CAT"){
             gameState = "CHARACTER_SELECT";
         }
         console.log(`gameState is now: ${gameState}`);
@@ -1255,11 +1273,30 @@ function drawMenu(){
         }
     });
 
-    // Controls / instructions
-    drawText("ARROWS MOVE", 60, 45);
-    drawText("SPACE SWAT", 60, 34);
-    drawText("P PAUSE", 60, 23);
-    drawText("ESC MENU", 60, 12);
+    // Controls / instructions: centered, sitting below the menu options
+    // (highest y among them wins the "top" spot on screen).
+    const controlLines = [
+        "ARROWS MOVE",
+        "SPACE SWAT",
+        "P PAUSE",
+        "= ZOOM IN",
+        "- ZOOM OUT",
+        "ESC MENU",
+    ];
+    const CONTROLS_TOP_Y = 80;
+    const CONTROLS_LINE_PITCH = 11;
+    let widestLine = 0;
+    controlLines.forEach((line, index) => {
+        const y = CONTROLS_TOP_Y - index * CONTROLS_LINE_PITCH;
+        drawText(line, centeredX(line), y);
+        widestLine = Math.max(widestLine, textWidth(line));
+    });
+    const panelPad = 5;
+    const panelWidth = widestLine + panelPad * 2;
+    const panelX1 = Math.round((COLUMN_SIZE - panelWidth) / 2);
+    const panelY1 = CONTROLS_TOP_Y - (controlLines.length - 1) * CONTROLS_LINE_PITCH - panelPad;
+    const panelY2 = CONTROLS_TOP_Y + 4 + panelPad;
+    drawRect(panelX1, panelY1, panelX1 + panelWidth, panelY2);
 
     // Margo's face flanking both sides of the menu
     const FACE_SCALE = 1.5;
