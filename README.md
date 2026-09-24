@@ -2,13 +2,15 @@
 
 By Cameron Pocisk and Aditya Pawar
 
+[Play MarKo](https://marko-eosin.vercel.app/)
+
 # Introduction
 
-In this assignment- we iterated over three levels of implementing our game with different ways to draw the lines.
+In this assignment- we iterated over three levels of implementing our game with different ways to draw the lines and then rendering them. 
 
 The inspiration for our game from our cats- Margo & Koko. Our initial concept was having them shoot/catch treats but we ended up with a more Subway Surfer-esque implementation where we play as the cat and avoid/swat obstacles!
 
-more about this in the Design Aspect. 
+More about this in the Design Aspect. 
 
 
 ## Youtube Video
@@ -52,17 +54,13 @@ For the Menu- we made a simple HTML file that lists our different Levels and the
 
 The camera starts out sitting back on the z-axis at {x: 0, y: 0, z: -10}, so it's looking at the cube from a distance instead of starting inside it.
 
-To actually get the cube from 3D space onto the 2D canvas, every vertex gets pushed through the same few steps:
+To actually get the cube from 3D space onto the 2D canvas, every vertex gets pushed through the same pipeline. 
 
-1. First we find the vertex's position relative to the camera instead of the world origin- camVert = vertex - camera. This is really what makes the camera "move".
+First we find the vertex's position relative to the camera instead of the world origin- camVert = vertex - camera- since this is really what makes the camera "move". Then we divide by z to get the actual pinhole projection- u = camVert.x / camVert.z and v = camVert.y / camVert.z- which is where the perspective comes from, since the farther something is, the bigger z is, so u and v shrink down, and that's exactly why far away stuff looks smaller. 
 
-2. Then we divide by z to get the actual pinhole projection- u = camVert.x / camVert.z and v = camVert.y / camVert.z. Dividing by z is the part that gives us perspective- the farther something is, the bigger z is, so u and v shrink, which is exactly why far away stuff looks smaller.
+Those numbers come out small and centered around 0, so we scale them up by the canvas size and shift by half the canvas so (0,0) lands in the middle of the screen instead of the top left corner. Last thing- canvas y grows downward but our 3D y grows upward, so right before we draw we flip it to canvas.height - v, otherwise the cube renders upside down.
 
-3. u and v come out as small numbers centered around 0, so we scale them up by the canvas size and shift by half the canvas so (0,0) lands in the middle of the screen instead of the top left corner.
-
-4. One more flip happens right before we draw- canvas y grows downward, but our 3D y grows upward, so we draw at canvas.height - v instead of just v. Skip this and the cube renders upside down.
-
-Controls
+### Controls
 
 - Arrow Up - move the camera forward (increase z)
 - Arrow Down - move the camera backward (decrease z)
@@ -71,17 +69,47 @@ Controls
 - R - reset the camera back to its starting position
 
 ## Level 1
+
 ### Making a wireframe Cat (Cam)
 
-#### Setting Up Verticies and Edges (Cam)
+#### Setting Up Verticies and Edges  (Cam)
+
 #### Multiple Instances (Adi)
-#### Scaling and Translating Edge Vertex sets (idk)
-#### Camera movement (Adi)
+
+Once we had the track segment and obstacle models set up as vertices and edges, we needed a way to actually place a bunch of copies of them into the world without redefining the shape every time. So each instance just stores its own position vector (x, y, z) and a scale value, and we loop through and spawn a bunch of TrackSegment and Obstacle objects (const-mageddon) at different z positions (random lanes for the obstacles) to build the track out ahead of the camera.
+
+
+#### Scaling and Translating Edge Vertex sets (Adi)
+
+The base vertices for each object stay defined around the origin- we make sure to never touch them directly. When we go to project an instance, we take each base vertex, multiply it by that instance's scale, then add on the instance's position before subtracting the camera. That's really the only transform happening here- scale then translate, no rotation, which was all we needed since the track is just going straight.
+
+#### Camera Movement (Adi)
+
+In terms of the actual gameplay- the camera keeps moving forward on it's own instead of a keypress. The z value increases every frame so it feels like the game is running constantly. In order to go Left and Right- you can use the Arrow Keys to switch the lane we're in which in turn increments/decrements the camera's x position slowly for a smooth transition.
+
+A neat tid-bit we added is a small bob to the cat while it's running- bobPhase increases every frame, and we take the sin of that and multiply it by a small amplitude (BOB_AMPLITUDE) to nudge the cat's y position up and down. The camera itself does not move but it's the cat model translating which makes it more immersive. 
+
 #### User action (Adi)
+
+The user action that we allow is for swatting at an obstacle when you're within a range set by a constant. The key to swat is clicking the space-bar which will destroy the object by triggering the .destroyed condition as true for the object Obstacle. 
+
+
 #### Reset Game (Adi)
+
+If you do run into an object instead of swatting at it or avoiding it by changing lanes. checkCollisions() catches it and in turn calls resetGame() which puts the camera back at (0,0,0) and in the middle lane. Undestroys the object that you may have destroyed for the level to be played again. 
+
+### Controls
+
+- Arrow Left / Arrow Right - switch lanes
+- Space - swat the obstacle in front of you
+- P - pause
+- Escape - back to menu
+- + : Zoom In
+- - : Zoom Out
 
 
 ## Level 2
+
 ### Using Custom Lines
 #### Cameron Custom Line (primitive) (Cam)
 #### Great/final Custom Line (Adi)
