@@ -364,6 +364,50 @@ class Pyramid{
     }
 }
 
+// A shape is any grouping of triangles
+class Shape{
+    constructor(triangles){
+        this.triangles = triangles;
+    }
+
+    vectorTranslate(translationVector){
+        // Apparently mapping is slower than itterating
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorTranslate(translationVector);
+        }
+    }
+
+    vectorScale(scalingVector){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorScale(scalingVector);
+        }
+    }
+
+    // Theta (Degrees)
+    // This is about the origin so it will not work (in a nice way) after any translation
+    rotateX(theta){
+        // Each Vector in each triangle should have the rotation applied
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateX(theta);            
+        }
+    }
+    rotateY(theta){
+        // Each Vector in each triangle should have the rotation applied
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateY(theta);            
+        }
+    }
+
+    draw(){
+        console.log(`Drawing Shape`);
+        for(let i = 0; i < this.triangles.length; i++){
+            let randomColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`; // Found online
+            this.triangles[i].draw(randomColor);
+        }
+    }
+
+}
+
 function makePixelatedLine(x1, y1, x2, y2){
     // Step 1: Find the slop of the line
     let slope = .000000000001;
@@ -471,10 +515,43 @@ function gameLoop(){
 }
 
 
-let test3D = new Pyramid(0, 0, 0, 1); // 'unit pyramid'
+// let test3D = new Pyramid(0, 0, 0, 1); // 'unit pyramid'
+let testShapeTriangles = null;
+
 function main(){
     const testDepth = 1;
+    // Define some cube Verticies
+    let sq1 = {x: 0, y: 0, z: 0};
+    let sq2 = {x: 0, y: 0, z: 1};
+    let sq3 = {x: 1, y: 0, z: 1};
+    let sq4 = {x: 1, y: 0, z: 0};
+    let sq5 = {x: 0, y: 1, z: 0};
+    let sq6 = {x: 0, y: 1, z: 1};
+    let sq7 = {x: 1, y: 1, z: 1};
+    let sq8 = {x: 1, y: 1, z: 0};
     
+    // A square has 6 sides, Needs 12 triangles
+    testShapeTriangles = new Shape([
+        // Bottom
+        new Triangle(), // 1 2 4
+        new Triangle(), // 2 3 4
+        // Top
+        new Triangle(), // 5 6 8
+        new Triangle(), // 6 7 8
+        // Close Side
+        new Triangle(), // 1 5 4
+        new Triangle(), // 5 8 4
+        // Far Side
+        new Triangle(), // 2 6 7
+        new Triangle(), // 6 7 3
+        // Left Side
+        new Triangle(), // 1 5 2
+        new Triangle(), // 5 6 2
+        // Right Side
+        new Triangle(), // 3 4 8
+        new Triangle(), // 4 8 7
+    ]);
+
     // test3D.vectorTranslate({x: 100, y: 0,z: 2});
     // test3D.draw();
     test3D.vectorScale({x: 50, y: 50, z:50});
@@ -482,52 +559,5 @@ function main(){
     test3D.draw();
     // gameLoop();
 }
-
-let rotationX = 1;
-let rotationY = 1;
-
-window.addEventListener('keydown', (event) => {
-    // Check for either the Right Arrow or the physical 'D' key
-    if (event.key === 'ArrowUp' || event.code === 'KeyW') {
-        clearDisplay();
-        test3D = new Pyramid(0, 0, 0, 1); // 'unit pyramid'
-        test3D.rotateX(rotationX);
-        test3D.rotateY(rotationY);
-        test3D.vectorScale({x: 50, y: 50, z:50});
-        test3D.vectorTranslate({x: 100, y: 100, z: 300});
-        test3D.draw();
-        rotationX += 2
-    }
-    if (event.key === 'ArrowRight' || event.code === 'KeyD') {
-        clearDisplay();
-        test3D = new Pyramid(0, 0, 0, 1); // 'unit pyramid'
-        test3D.rotateX(rotationX);
-        test3D.rotateY(rotationY);
-        test3D.vectorScale({x: 50, y: 50, z:50});
-        test3D.vectorTranslate({x: 100, y: 100, z: 300});
-        test3D.draw();
-        rotationY += 2
-    }
-    if (event.key === 'ArrowDown' || event.code === 'KeyS') {
-        clearDisplay();
-        test3D = new Pyramid(0, 0, 0, 1); // 'unit pyramid'
-        test3D.rotateX(rotationX);
-        test3D.rotateY(rotationY);
-        test3D.vectorScale({x: 50, y: 50, z:50});
-        test3D.vectorTranslate({x: 100, y: 100, z: 300});
-        test3D.draw();
-        rotationX -= 2
-    }
-    if (event.key === 'ArrowLeft' || event.code === 'KeyA') {
-        clearDisplay();
-        test3D = new Pyramid(0, 0, 0, 1); // 'unit pyramid'
-        test3D.rotateX(rotationX);
-        test3D.rotateY(rotationY);
-        test3D.vectorScale({x: 50, y: 50, z:50});
-        test3D.vectorTranslate({x: 100, y: 100, z: 300});
-        test3D.draw();
-        rotationY -= 2
-    }
-});
 
 main();
