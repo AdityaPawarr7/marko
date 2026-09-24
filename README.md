@@ -1,4 +1,5 @@
 # MarKo
+
 By Cameron Pocisk and Aditya Pawar
 
 # Introduction
@@ -10,7 +11,7 @@ The inspiration for our game from our cats- Margo & Koko. Our initial concept wa
 more about this in the Design Aspect. 
 
 
-# Youtube Video
+## Youtube Video
 
 ## Game Description 
 
@@ -43,7 +44,31 @@ After the scenery was set- we could move onto making the obstacles to render in 
 # Levels of Implementation
 
 ## Level 0
-### Rendering a Wireframe Cube and the basic pipeline (Adi)
+### Rendering a Wireframe Cube and the basic pipeline 
+
+Before touching any of the actual game objects, Level 0 was really just about getting the whole pinhole camera pipeline working end to end on the simplest shape possible- a cube, defined as 8 vertices and 12 edges centered at the origin.
+
+For the Menu- we made a simple HTML file that lists our different Levels and the buttons to get directed to the levels. Level 0 and Level 1 are simple redirects that ports you in the WireFrame Cube view and the Game drawn out by the JavaScript ctx function. Level 2 and Level 3 directs you to an individual page that has a menu on it and controls listed as well.
+
+The camera starts out sitting back on the z-axis at {x: 0, y: 0, z: -10}, so it's looking at the cube from a distance instead of starting inside it.
+
+To actually get the cube from 3D space onto the 2D canvas, every vertex gets pushed through the same few steps:
+
+1. First we find the vertex's position relative to the camera instead of the world origin- camVert = vertex - camera. This is really what makes the camera "move".
+
+2. Then we divide by z to get the actual pinhole projection- u = camVert.x / camVert.z and v = camVert.y / camVert.z. Dividing by z is the part that gives us perspective- the farther something is, the bigger z is, so u and v shrink, which is exactly why far away stuff looks smaller.
+
+3. u and v come out as small numbers centered around 0, so we scale them up by the canvas size and shift by half the canvas so (0,0) lands in the middle of the screen instead of the top left corner.
+
+4. One more flip happens right before we draw- canvas y grows downward, but our 3D y grows upward, so we draw at canvas.height - v instead of just v. Skip this and the cube renders upside down.
+
+Controls
+
+- Arrow Up - move the camera forward (increase z)
+- Arrow Down - move the camera backward (decrease z)
+- Arrow Left - move the camera left (decrease x)
+- Arrow Right - move the camera right (increase x)
+- R - reset the camera back to its starting position
 
 ## Level 1
 ### Making a wireframe Cat (Cam)
