@@ -17,17 +17,17 @@ More about this in the Design Aspect.
 
 ## Game Description 
 
-In the game- you get to play as a cat and your objective is to avoid/swat at obstacles and reach the finish line where you will be rewarded with Churus!
+In the game- you get to play as a cat and your objective is to avoid/swat at obstacles and reach the finish line where you will be rewarded with Churros!
 
-As the level progresses, your character will speed up and the frequency of obstacles will increase as well to ensure a positive game progression in terms of difficultly. 
+As the level progresses, your character will speed up and the frequency of obstacles will increase as well to ensure a positive game progression in terms of difficulty. 
 
 ## Teamwork Strategies
 Cameron started this project by making the cat for level 1
 (Projection and implementing the new display and list of V and E's)
 Then Cameron started to work on the 3d triangles.
-### (Adi) (Remove this header when ur done)
-Adi say what u did before we came together at the end
-In the end we synced up and combined the game logic and 3d objects and trinagle things to make a fun game!
+Adi started on the pipeline side- building the pinhole camera and cube for Level 0, then carrying that into Level 1 with the track segments, obstacles, camera movement, the swat action, and the reset logic. From there, Adi moved into Level 2, writing the custom line function and the pixel array display/clearing methods, then handled the obstacle spawning, game logic, and depth projection work once Level 3 came together with Cameron's triangle and 3D shape classes.
+
+In the end we synced up and combined the game logic and 3d objects and triangle things to make a fun game!
 
 # Design (Adi and Cameron)
 
@@ -83,16 +83,12 @@ Level 1 asked for a real wireframe scene- at least 3 object types built from ver
 Making the wireframe for the cat face was not very easy for me. 
 In the end I follow this process
 1. Draw a cartoony cat face on graph paper. 
-2. Try to find good verticies that represent the shape of the cat && number them
+2. Try to find good vertices that represent the shape of the cat && number them
 3. Label all of the edges
 4. Hard code them into the cat class
 5. Use the same method in level 0 for drawing the cube 
 
-#### Multiple Instances (Adi)
-#### Scaling and Translating Edge Vertex sets (idk)
-For the first cat head wireframe, I applied translations at the start of the construction phase
-#### Camera movement (Adi)
-#### Setting Up Verticies and Edges  (Cam)
+#### Setting Up Vertices and Edges (Cam)
 
 ### Drawing the Scene (Adi)
 
@@ -110,9 +106,11 @@ CatBody is a lot more involved- since the camera's always behind the cat, it's b
 
 The base vertices for each object stay defined around the origin- we make sure to never touch them directly. When we go to project an instance, we take each base vertex, multiply it by that instance's scale, then add on the instance's position before subtracting the camera. That's really the only transform happening here- scale then translate, no rotation, which was all we needed since the track is just going straight.
 
+(Cam's note: for the first cat head wireframe, I applied translations at the start of the construction phase.)
+
 #### Camera Movement (Adi)
 
-In terms of the actual gameplay- the camera keeps moving forward on it's own instead of a keypress. The z value increases every frame so it feels like the game is running constantly. In order to go Left and Right- you can use the Arrow Keys to switch the lane we're in which in turn increments/decrements the camera's x position slowly for a smooth transition.
+In terms of the actual gameplay- the camera keeps moving forward on its own instead of a keypress. The z value increases every frame so it feels like the game is running constantly. In order to go Left and Right- you can use the Arrow Keys to switch the lane we're in which in turn increments/decrements the camera's x position slowly for a smooth transition.
 
 A neat tid-bit we added is a small bob to the cat while it's running- bobPhase increases every frame, and we take the sin of that and multiply it by a small amplitude (BOB_AMPLITUDE) to nudge the cat's y position up and down. The camera itself does not move but it's the cat model translating which makes it more immersive. 
 
@@ -123,7 +121,7 @@ The user action that we allow is for swatting at an obstacle when you're within 
 
 #### Reset Game (Adi)
 
-If you do run into an object instead of swatting at it or avoiding it by changing lanes. checkCollisions() catches it and in turn calls resetGame() which puts the camera back at (0,0,0) and in the middle lane. Undestroys the object that you may have destroyed for the level to be played again. 
+If you do run into an object instead of swatting at it or avoiding it by changing lanes, checkCollisions() catches it and in turn calls resetGame() which puts the camera back at (0,0,0) and in the middle lane. Undestroys the object that you may have destroyed for the level to be played again. 
 
 ### Controls
 
@@ -142,15 +140,8 @@ Level 2 asked us to build our own 320x200 pixel grid, write our own line drawing
 ### Using Custom Lines
 
 #### Cameron Custom Line (primitive) (Cam)
-I was the first to change the line function and I did a very simple step over for the lines. This worekd good when the slope was <= 1
+I was the first to change the line function and I did a very simple step over for the lines. This worked good when the slope was <= 1
 This line drawing fn just calculated the slope, and then applied the slope over all of the points on the line
-#### Final Custom Line (Adi)
-### Display Methods (Adi)
-#### The Dom Grid (Cam)
-On most of the forks for my development, I was working on a version of the game which was colored by way of thousands of individual HTLM divs in a grid (absolutely no canvas)
-To do this I set up a grid in the HTML, also setup a 320x200 array which would hold the HTML element (and later depth).
-When coloring the divs, I added them to a set which would all get colored when the game was ready to draw, then the same set got set to the background color at the start of the next frame. 
-### Coloring (Adi)
 
 #### Final Custom Line (Adi)
 
@@ -160,24 +151,32 @@ If dx is bigger we walk over x and compute y off the slope for each step, and if
 
 Instead of every object calling makePixelatedLine directly for each of its edges- we outsourced that to one drawWireframe function which takes in the projected vertices & edges array and uses that to loop through the edges and calls makePixelatedLine for each one. So, it's just abstraction which looks like drawWireframe(projectInstance(this),this.edges).
 
-
 ### Display Methods (Adi)
 
-We set up a 320x200 2D Array (displayMatrix) that stores a color string for every pixel. colorPixel then just writes the given color into that array at (x,y)- flipping y since our coordinate system has its origin in the top left  but we want y=0 at the bottom of our screen. The render function loops through the whole array and draws each entry as it's own 5x5 rectangle with ctx.fillRect which is what turns our array into blocky low-res look on the screen. 
+We set up a 320x200 2D Array (displayMatrix) that stores a color string for every pixel. colorPixel then just writes the given color into that array at (x,y)- flipping y since our coordinate system has its origin in the top left  but we want y=0 at the bottom of our screen. The render function loops through the whole array and draws each entry as its own 5x5 rectangle with ctx.fillRect which is what turns our array into blocky low-res look on the screen. 
 
-#### The DOM Grid (Cam)
+#### The Dom Grid (Cam)
 
+On most of the forks for my development, I was working on a version of the game which was colored by way of thousands of individual HTML divs in a grid (absolutely no canvas)
+To do this I set up a grid in the HTML, also setup a 320x200 array which would hold the HTML element (and later depth).
+When coloring the divs, I added them to a set which would all get colored when the game was ready to draw, then the same set got set to the background color at the start of the next frame. 
 
 ### Clearing (Adi)
 
-Before every frame gets redrawn, clearDisplay() goes through every row in displayMatrix and fills it back witht he background color so nothing from the last frame sticks around. Since it's just a color string and not a object, the fill function is reused.
+Before every frame gets redrawn, clearDisplay() goes through every row in displayMatrix and fills it back with the background color so nothing from the last frame sticks around. Since it's just a color string and not an object, the fill function is reused.
 
 ## Level 3 (Cam)
 ### Obstacles (Adi)
+
+In Level 1, obstacles were just plain wireframe cubes- 8 vertices with a couple X-brace diagonals so they'd read as boxes instead of flat squares. For Level 3, we swapped that out for two actual shapes built out of triangles instead of edges- a TrafficCone and a CardboardBox, alternating every other obstacle so half the track has cones and half has boxes. Both still get placed the same way as they did back in Level 1 though- same lane array, same random z spacing, and the same destroyed flag driving the swat/collision logic.
+
 ### 3d Game Logic (Adi)
+
+This core logic has actually been here since Level 1- we're just elaborating on it now that Level 3 has real depth and triangles to deal with. All the actual gameplay logic runs off the z-distance between the camera and each obstacle- distance = obstacle.z - camera.z. Collisions check if that distance drops inside COLLISION_RANGE while you're still in the same lane, which triggers resetGame(). Swatting works the same way but off a much bigger SWAT_RANGE, so you get some room to react before actually running into something. Every frame, camera.z increases by FORWARD_SPEED to keep the run going, and camera.x eases toward whichever lane you're in instead of snapping, same as Level 1. Before anything even gets drawn, we also skip track segments and obstacles that are either too far ahead (past MAX_RENDER_DISTANCE) or have already fully passed the camera, so we're not wasting time running triangles through the depth buffer for stuff that can't even be seen.
+
 ### Triangle Class (Cam)
-On a seperate branch (CameronDivsFork) I implemented a triangle.
-The triangle class has these capabilties that I wrote myself
+On a separate branch (CameronDivsFork) I implemented a triangle.
+The triangle class has these capabilities that I wrote myself
 Calculate Triangle area
 Get Barycentric Coordinates
 Calculate Depth
@@ -192,28 +191,33 @@ Once I implemented the Triangle class and got used to making shapes like the pyr
 
 ### Cardboard Box Class (Adi)
 
-### occlusion (Cam)
-To handle occulsion, I only drew the triangles if the new depth was closer than the old depth 
+Followed the same pattern as TrafficCone- same constructor, same x/y/z/destroyed fields so the game logic didn't need to change. It's just a cube built out of 12 triangles (2 per face) using Cameron's Triangle class, with each face given its own brown shade so it reads as a proper cube instead of a flat outline.
+
+### Occlusion (Cam)
+To handle occlusion, I only drew the triangles if the new depth was closer than the old depth 
 (New depth via barycentric coords and old depth stored in array)
 ### Barycentric Coordinates (Cam)
 Once I had the triangle area formula, this was relatively straightforward to calculate. I returned the coordinates and they allowed me to determine if any point/pixel was outside the triangle by - area and later the depth by scaling the z coordinates. 
 ### Translation, Scaling, Rotations (Cam)
-These were pretty fun to do, these were mostly doing vector maths. I even went online to see the rotation matricies and then applied them to my X, Y coordinates. 
-I did learn that scaleing and rotations after translations were really bad. So near the end I tried implementing a way to queue up all the transformation and apply them at once before drawing in the correct order -- but ran out of time.
+These were pretty fun to do, these were mostly doing vector maths. I even went online to see the rotation matrices and then applied them to my X, Y coordinates. 
+I did learn that scaling and rotations after translations were really bad. So near the end I tried implementing a way to queue up all the transformation and apply them at once before drawing in the correct order -- but ran out of time.
 #### Clockwise Problem (Cam)
-This was one of my only uses of genAI. I did this becuase I was getting paranoid and not being able to trust my area code (fundameltal) made it difficult to debug. This worked out pretty good and helped me focus on the graphics part of the code a lot more. 
+This was one of my only uses of genAI. I did this because I was getting paranoid and not being able to trust my area code (fundamental) made it difficult to debug. This worked out pretty good and helped me focus on the graphics part of the code a lot more. 
 ### Depth Projection (and its relation to pinhole camera) (Adi)
+
+The depth value we sort by is just camera-relative z- the exact same z from Level 0's pinhole divide (u = x/z, v = y/z). We interpolate that across a triangle with barycentric coordinates, and colorPixelDepth only draws a pixel if that depth is closer than whatever's already there, so overlapping triangles sort themselves out without drawing back-to-front.
 
 
 # Final Thoughts
 
-## What we would have changed
+## Future Work and Reflection
 ### Cam
 There is a lot more to this project than the Vertex and Edges as well as the 3d shapes. Although I tried to implement what I thought was a good portion before the submission, on the final day even though I did a good job and spent a large portion of the whole day on the triangles and shapes there was still more to do. 
 ### Adi
+I would have loved to take this further into a full fledged game, kind of like how the Google Dino game works- just a simple, addictive endless runner you can actually play and lose yourself in. Working through all of this really helped me understand how the core basics of computer graphics work, from the pinhole camera all the way up to triangle rasterization and depth.
 
-## Credits (Who did what?)
-The names next to the documentation headers explain who did what
+## Credits 
+The names next to the documentation headers explain who did what.
 
 ## AI Usage
 
@@ -222,3 +226,12 @@ I used genAI to...
 - make the clockwise member function for triangle
 - Help me generate a solution to represent depth better
 - Debug in a couple very small spots 
+
+### Adi
+I used genAI to...
+- Help develop the game flow logic and how the different pieces tie together
+- Untangle math I got stuck on, especially tweaking signs and figuring out the right constants for the different methods of drawing lines and displaying them. 
+- Build out the menu options for Level 2 & 3 (layout, centering, navigation between levels)
+- Speed up my development- it was genuinely effective, but it was a little scary seeing how capable the Claude Code harness actually is. With Great Power comes Great Responsibility. 
+- I used it more like a tutor than a one-prompt machine, having it walk me through the concepts instead of just spitting out finished code. 
+- The final product is a culmination of Cameron and my vision and not what AI suggested/wanted to do. 
