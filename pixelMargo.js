@@ -124,14 +124,14 @@ class Triangle{
 
     // https://jtsorlinis.github.io/rendering-tutorial/#:~:text=Area%20of%20a%20triangle%20(aka%20maths)
     // CLOCKWISE ONLY (Way to turn these into clockwise no matter what?)
-    getArea(){
-        return (((this.x2-this.x1)*(this.y3-this.y1))-((this.y2-this.y1)*(this.x3-this.x1))) / 2;
+    get2dArea(){
+        return (((this.u2-this.u1)*(this.v3-this.v1))-((this.v2-this.v1)*(this.u3-this.u1))) / 2;
     }
 
     // Only works when coords are correctly clockwise
     getBarycentricCoordinates(u, v){
         // Step 1: Find the area of the whole triangle
-        let wholeArea = Math.abs(this.getArea());
+        let wholeArea = Math.abs(this.get2dArea());
 
         // Find a p2 -> V -> p3 (Need to call general Triangle Area Formula bc using the verticies Coords)
         const aArea = getTriangleArea(this.u2, this.v2, u, v, this.u3, this.v3);
