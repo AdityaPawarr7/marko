@@ -1,6 +1,10 @@
 const ROW_SIZE = 200;
 const COLUMN_SIZE = 320;
 
+const DISTANCE_CLOSE = 50;
+const DISTANCE_MEDIUM = 150;
+const DISTANCE_FAR = 300;
+
 const NEAR_CLIP = 10;
 const camera = {x: 0, y: 0, z: 0};
 const MAX_RENDER_DISTANCE= 7050;
@@ -28,7 +32,7 @@ const GROUND_Y = -TRACK_WALL_HEIGHT * TRACK_SEGMENT_SCALE; // matches TrackSegme
 
 
 // Obstacle Constants
-const OBSTACLE_SCALE = 10;
+const OBSTACLE_SCALE = 18;
 const OBSTACLE_COUNT = 6;
 const OBSTACLE_LOCAL_HALF_DEPTH = 0.5; 
 const SWAT_RANGE = 40;    // how far ahead of the camera you can still swat an obstacle
@@ -41,7 +45,7 @@ const BOB_AMPLITUDE = 0.2;    // how far up/down it moves
 let bobPhase = 0;
 const CAT_FORWARD_OFFSET = 15; // always this far ahead of the camera, in front of view
 const CAT_LANE_OFFSET = LANE_WIDTH / 2; // how far left of camera-center the cat sits
-const FORWARD_SPEED = 0.5;     // world units the camera advances per frame — this is the "running"
+const FORWARD_SPEED = 1;     // world units the camera advances per frame — this is the "running"
 const COLLISION_RANGE = OBSTACLE_LOCAL_HALF_DEPTH * OBSTACLE_SCALE; // it's basically reached you
 
 
@@ -76,7 +80,7 @@ const FONT = {
 class displayGrid{
     constructor(){
         this.displayMatrix = Array.from({ length: ROW_SIZE }, () =>
-            Array.from({ length: COLUMN_SIZE }, () => BACKGROUND_COLOR)
+            Array.from({ length: COLUMN_SIZE }, () => ({color: BACKGROUND_COLOR, depth: Infinity}))
         );
         this.depthMatrix= Array.from({ length: ROW_SIZE }, () =>
             Array.from({ length: COLUMN_SIZE }, () => Infinity)
@@ -87,22 +91,38 @@ class displayGrid{
         if(x < 0 || x >= COLUMN_SIZE || y < 0 || y >= ROW_SIZE){
             return;
         }
-        this.displayMatrix[ROW_SIZE-1 - y][x] = color;
+        this.displayMatrix[ROW_SIZE-1 - y][x].color = color;
     }
 
-    colorPixelDepth(x, y, depth, color){
+    colorPixelDepth(x, y, depth, color = ON_COLOR){
         if(x < 0 || x >= COLUMN_SIZE || y < 0 || y >= ROW_SIZE) return;
         const row= ROW_SIZE - 1 - y;
         if(depth < this.depthMatrix[row][x]){
             this.depthMatrix[row][x] = depth;
-            this.displayMatrix[row][x] = color;
+            this.displayMatrix[row][x].color = color;
+            this.displayMatrix[row][x].depth = depth;
         }
+    }
+
+    getPixelDepth(x, y){
+        if(x < 0 || x >= COLUMN_SIZE || y < 0 || y >= ROW_SIZE){
+            console.log("Pixel was outside of drawable range, way outside");
+            return -99999;
+        }
+        const pixel = this.displayMatrix[ROW_SIZE-1 - y][x];
+        // Get any possible pixel color or just make it mad far away
+        if(pixel == null || pixel.depth == null){
+            return -99999;
+        }
+
+        console.log(`got pixel depth: ${pixel.depth}`);
+        return pixel.depth;
     }
 
     render(){
         for(let r = 0; r < ROW_SIZE; r++){
             for(let c = 0; c < COLUMN_SIZE; c++){
-                ctx.fillStyle = this.displayMatrix[r][c];
+                ctx.fillStyle = this.displayMatrix[r][c].color;
                 ctx.fillRect(c*PIXEL_SIZE, r*PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
             }
         }
@@ -452,7 +472,456 @@ class TrackSegment{
     const projected = projectInstance(this);
     drawTriangles(this);
     drawWireframe(projectInstance(this), this.laneDividerEdges);
-  
+
+    }
+}
+
+// CAMERON PORTING OVER DRAW CAPABILITIES
+class Triangle{
+    // Member varibles for 2d coordinates
+    u1; u2; u3; v1; v2; v3;
+    constructor(x1, y1, z1, x2, y2, z2, x3, y3, z3){
+        // 3d Coordinates
+        this.x1 = x1;
+        this.y1 = y1;
+        this.z1 = z1;
+        this.x2 = x2;
+        this.y2 = y2;
+        this.z2 = z2;
+        this.x3 = x3;
+        this.y3 = y3;
+        this.z3 = z3;
+    }
+
+    printVerticies(){
+        console.log(`x1: ${parseInt(this.x1)}, y1: ${parseInt(this.y1)}, z1: ${parseInt(this.z1)}\nx2: ${parseInt(this.x2)}, y2: ${parseInt(this.y2)}, z2: ${parseInt(this.z2)}\nx3: ${parseInt(this.x3)}, y3: ${parseInt(this.y3)}, z3: ${parseInt(this.z3)}`);
+    }
+
+    // FULLY GPT GENERATED (Have been struggling with ordering so wanted to try to potentially avoid)
+    makeClockwise() {
+        // Signed 2D area / cross product of the projected triangle
+        const cross =
+            (this.u2 - this.u1) * (this.v3 - this.v1) -
+            (this.v2 - this.v1) * (this.u3 - this.u1);
+
+        // Positive = counter-clockwise
+        // Negative = clockwise
+        if (cross > 0) {
+            // Swap vertex 2 and vertex 3
+            [this.x2, this.x3] = [this.x3, this.x2];
+            [this.y2, this.y3] = [this.y3, this.y2];
+            [this.z2, this.z3] = [this.z3, this.z2];
+
+            [this.u2, this.u3] = [this.u3, this.u2];
+            [this.v2, this.v3] = [this.v3, this.v2];
+        }
+    }
+
+    // https://jtsorlinis.github.io/rendering-tutorial/#:~:text=Area%20of%20a%20triangle%20(aka%20maths)
+    // CLOCKWISE ONLY (Way to turn these into clockwise no matter what?)
+    get2dArea(){
+        return (((this.u2-this.u1)*(this.v3-this.v1))-((this.v2-this.v1)*(this.u3-this.u1))) / 2;
+    }
+
+    // Only works when coords are correctly clockwise
+    getBarycentricCoordinates(u, v){
+        // Step 1: Find the area of the whole triangle
+        let wholeArea = Math.abs(this.get2dArea());
+
+        // Find a p2 -> V -> p3 (Need to call general Triangle Area Formula bc using the verticies Coords)
+        const aArea = getTriangleArea(this.u2, this.v2, u, v, this.u3, this.v3);
+
+        // Find b p1 -> p3 -> V
+        const bArea = getTriangleArea(this.u1, this.v1, this.u3, this.v3, u, v);
+
+        // Find c P1 -> V -> p2
+        const cArea = getTriangleArea(this.u1, this.v1, u, v, this.u2, this.v2);
+
+        // Not gonna port this to a class sorreeee
+        return {a: aArea/wholeArea, b: bArea/wholeArea, c: cArea/wholeArea};
+    }
+
+    translate3dCoordinates(printResults = false){
+        // Translate 3d Coordinates to 2D relative to the camera, using the
+        // same PROJECTION_SCALE/zoomLevel/screen-centering as projectInstance()
+        // so triangles land in the same coordinate space as everything else.
+        if(this.z1 - camera.z <= NEAR_CLIP || this.z2 - camera.z <= NEAR_CLIP || this.z3 - camera.z <= NEAR_CLIP)
+            return false;
+
+        this.u1 = (this.x1 - camera.x) / (this.z1 - camera.z) * PROJECTION_SCALE * zoomLevel + COLUMN_SIZE / 2;
+        this.v1 = (this.y1 - camera.y) / (this.z1 - camera.z) * PROJECTION_SCALE * zoomLevel + ROW_SIZE / 2;
+        this.u2 = (this.x2 - camera.x) / (this.z2 - camera.z) * PROJECTION_SCALE * zoomLevel + COLUMN_SIZE / 2;
+        this.v2 = (this.y2 - camera.y) / (this.z2 - camera.z) * PROJECTION_SCALE * zoomLevel + ROW_SIZE / 2;
+        this.u3 = (this.x3 - camera.x) / (this.z3 - camera.z) * PROJECTION_SCALE * zoomLevel + COLUMN_SIZE / 2;
+        this.v3 = (this.y3 - camera.y) / (this.z3 - camera.z) * PROJECTION_SCALE * zoomLevel + ROW_SIZE / 2;
+
+        if(printResults){
+            console.log(`u1: ${this.u1}, v1: ${this.v1}\nu2: ${this.u2}, v2: ${this.v2}\nu3: ${this.u3}, v3: ${this.v3}`);
+        }
+        return true;
+    }
+
+    draw(color = "#0f380f"){
+        // Translate the coordinates.
+        let good3dCoordinates = this.translate3dCoordinates();
+
+        if(!good3dCoordinates){
+            // Skip drawing this son (Behind camera)
+            return;
+        }
+
+        this.makeClockwise(); // Do this after translating the vectors
+
+        // Setup the bounding box
+        let uMin = Math.floor(Math.min(this.u1, this.u2, this.u3));
+        let vMin = Math.floor(Math.min(this.v1, this.v2, this.v3));
+        let uMax = Math.ceil(Math.max(this.u1, this.u2, this.u3));
+        let vMax = Math.ceil(Math.max(this.v1, this.v2, this.v3));
+
+        // Step 2: Start Itterating over the bounding box
+        var barycentricHold = 0;
+        for(let u = uMin; u <= uMax; u++){
+            for(let v = vMin; v <= vMax; v++){
+                barycentricHold = this.getBarycentricCoordinates(u, v);
+                // Step 3: For each pixel, determine if it is in bounds with Barycentric Coordiantes
+                if(barycentricHold.a < 0 || barycentricHold.b < 0 || barycentricHold.c < 0){
+                    // (Skip) Do not draw pixels with a negative barycentric coord.
+                }
+                else{
+                    // all positive, Draw :)
+                    // We need to apply the depth as barycentric coordiantes to get a depth value.
+                    // colorPixelDepth only draws over what's already there if this is closer.
+                    // Depth has to be camera-relative (like projectInstance's depth), not
+                    // absolute world z, or this loses every depth test against the track/cat.
+                    let newDepth = barycentricHold.a * (this.z1 - camera.z) + barycentricHold.b * (this.z2 - camera.z) + barycentricHold.c * (this.z3 - camera.z);
+                    display.colorPixelDepth(u, v, newDepth, color);
+                }
+            }
+        }
+    }
+
+    // Translations should happen in the update part of game loop, so should apply to 3d
+    scale(scalar){
+        this.x1 *= scalar;
+        this.y1 *= scalar;
+        this.z1 *= scalar;
+        this.x2 *= scalar;
+        this.y2 *= scalar;
+        this.z2 *= scalar;
+        this.x3 *= scalar;
+        this.y3 *= scalar;
+        this.z3 *= scalar;
+    }
+
+    vectorScale(scalingVector){
+        this.x1 *= scalingVector.x;
+        this.y1 *= scalingVector.y;
+        this.z1 *= scalingVector.z;
+        this.x2 *= scalingVector.x;
+        this.y2 *= scalingVector.y;
+        this.z2 *= scalingVector.z;
+        this.x3 *= scalingVector.x;
+        this.y3 *= scalingVector.y;
+        this.z3 *= scalingVector.z;
+    }
+
+    vectorTranslate(translationVector){
+        this.x1 += translationVector.x;
+        this.y1 += translationVector.y;
+        this.z1 += translationVector.z;
+        this.x2 += translationVector.x;
+        this.y2 += translationVector.y;
+        this.z2 += translationVector.z;
+        this.x3 += translationVector.x;
+        this.y3 += translationVector.y;
+        this.z3 += translationVector.z;
+    }
+
+    rotateX(theta){
+        // Calculate the weights for all of the rotations in the matrix
+        let cos = Math.cos(theta * (Math.PI / 180));
+        let sin = Math.sin(theta * (Math.PI / 180));
+        // Also set up Y holds bc Y changes during calculation
+        let yHold = -999;
+
+        // Operations pre-calculated to app to vector. Apply to all vectors X does not change
+        yHold = this.y1
+        this.y1 = (this.y1 * cos) + (-1 * sin * this.z1);
+        this.z1 = (yHold * sin) + (cos * this.z1);
+
+        yHold = this.y2
+        this.y2 = (this.y2 * cos) + (-1 * sin * this.z2);
+        this.z2 = (yHold * sin) + (cos * this.z2);
+
+        yHold = this.y3
+        this.y3 = (this.y3 * cos) + (-1 * sin * this.z3);
+        this.z3 = (yHold * sin) + (cos * this.z3);
+    }
+    rotateY(theta){
+        // Calculate the weights for all of the rotations in the matrix
+        let cos = Math.cos(theta * (Math.PI / 180));
+        let sin = Math.sin(theta * (Math.PI / 180));
+        // Also set up Y holds bc Y changes during calculation
+        let xHold = -999;
+        let zHold = -999; // One of these can be avoided but I lowk cant be bothered
+
+        // Operations pre-calculated to app to vector. Apply to all vectors X does not change
+
+        // V1
+        xHold = this.x1;
+        zHold = this.z1;
+        this.x1 = (xHold * cos) + (zHold * sin);
+        this.y1 = this.y1;
+        this.z1 = (xHold * -1 * sin) + (zHold * cos);
+        // V2
+        xHold = this.x2;
+        zHold = this.z2;
+        this.x2 = (xHold * cos) + (zHold * sin);
+        this.y2 = this.y2;
+        this.z2 = (xHold * -1 * sin) + (zHold * cos);
+        // V3
+        xHold = this.x3;
+        zHold = this.z3;
+        this.x3 = (xHold * cos) + (zHold * sin);
+        this.y3 = this.y3;
+        this.z3 = (xHold * -1 * sin) + (zHold * cos);
+    }
+
+}
+
+// A shape is any grouping of triangles
+class Shape{
+    constructor(triangles){
+        this.triangles = triangles;
+    }
+
+    vectorTranslate(translationVector){
+        // Apparently mapping is slower than itterating
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorTranslate(translationVector);
+        }
+    }
+
+    vectorScale(scalingVector){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorScale(scalingVector);
+        }
+    }
+
+    // Theta (Degrees)
+    // This is about the origin so it will not work (in a nice way) after any translation
+    rotateX(theta){
+        // Each Vector in each triangle should have the rotation applied
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateX(theta);
+        }
+    }
+    rotateY(theta){
+        // Each Vector in each triangle should have the rotation applied
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateY(theta);
+        }
+    }
+
+    draw(){
+        console.log(`Drawing Shape`);
+        for(let i = 0; i < this.triangles.length; i++){
+            let randomColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`; // Found online
+            this.triangles[i].draw(randomColor);
+        }
+    }
+}
+
+class TrafficCone{
+    // x, y, z = this cone's WORLD position (center of its base, ground height, depth)
+    // edgeLength = this cone's scale factor
+    constructor(x, y, z, edgeLength = 1){
+        // Kept alongside the baked-world triangles below so game logic
+        // (collisions, swatting, render culling) has a plain position to read,
+        // the same way Obstacle exposed this.x/y/z.
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.destroyed = false;
+
+        this.triangles = [];
+        // Setup the basic coordinates, centered on the origin (base bottom,
+        // apex top) so passing a center position here lines it up like Obstacle did.
+        let topCoordiante = {x: 0, y: .5, z: 0};
+        let v1 = {x: -.5, y: -.5, z: -.5};
+        let v2 = {x: -.5, y: -.5, z: .5};
+        let v3 = {x: .5, y: -.5, z: .5};
+        let v4 = {x: .5, y: -.5, z: -.5};
+
+        // Now add all of these as triangles
+        // Bottom (2 triangles for square)
+        this.triangles.push(new Triangle(
+            v1.x, v1.y, v1.z,
+            v2.x, v2.y, v2.z,
+            v3.x, v3.y, v3.z,
+        ));
+        this.triangles.push(new Triangle(
+            v3.x, v3.y, v3.z,
+            v4.x, v4.y, v4.z,
+            v1.x, v1.y, v1.z,
+        ));
+        // Sides
+        this.triangles.push(new Triangle(
+            v1.x, v1.y, v1.z,
+            topCoordiante.x, topCoordiante.y, topCoordiante.z,
+            v2.x, v2.y, v2.z,
+        ));
+        this.triangles.push(new Triangle(
+            v2.x, v2.y, v2.z,
+            topCoordiante.x, topCoordiante.y, topCoordiante.z,
+            v3.x, v3.y, v3.z,
+        ));
+        this.triangles.push(new Triangle(
+            v3.x, v3.y, v3.z,
+            topCoordiante.x, topCoordiante.y, topCoordiante.z,
+            v4.x, v4.y, v4.z,
+        ));
+        this.triangles.push(new Triangle(
+            v4.x, v4.y, v4.z,
+            topCoordiante.x, topCoordiante.y, topCoordiante.z,
+            v1.x, v1.y, v1.z,
+        ));
+
+        // Apply the constructor parameters (SCALE THEN TRANSLATE)
+        // this.rotateX(90);
+        this.vectorScale({x: edgeLength, y: edgeLength, z: edgeLength});
+        this.vectorTranslate({x: x, y: y, z: z});
+    }
+
+    vectorTranslate(translationVector){
+        // Apparently mapping is slower than itterating
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorTranslate(translationVector);
+        }
+    }
+
+    vectorScale(scalingVector){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorScale(scalingVector);
+        }
+    }
+
+    // Theta (Degrees)
+    // This is about the origin so it will not work (in a nice way) after any translation
+    rotateX(theta){
+        // Each Vector in each triangle should have the rotation applied
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateX(theta);
+        }
+    }
+    rotateY(theta){
+        // Each Vector in each triangle should have the rotation applied
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateY(theta);
+        }
+    }
+
+    draw(){
+        const colors = [
+            "#ff8a00",
+            "#ffa030",
+            "#ffba67",
+            "#ffd4a0",
+            "#ffecd4"
+        ];
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].draw(colors[i % colors.length]);
+        }
+    }
+}
+
+class CardboardBox{
+    // x, y, z = this box's WORLD position (center of the box)
+    // edgeLength = this box's scale factor
+    constructor(x, y, z, edgeLength = 1){
+        // Same plain position/state fields TrafficCone exposes, so game logic
+        // (collisions, swatting, render culling) can treat either the same way.
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.destroyed = false;
+
+        this.triangles = [];
+        // A cube, centered on the origin, so passing a center position here
+        // lines it up the same way TrafficCone/Obstacle did.
+        let v1 = {x: -.5, y: -.5, z: -.5}; // front-bottom-left
+        let v2 = {x: .5, y: -.5, z: -.5};  // front-bottom-right
+        let v3 = {x: .5, y: .5, z: -.5};   // front-top-right
+        let v4 = {x: -.5, y: .5, z: -.5};  // front-top-left
+        let v5 = {x: -.5, y: -.5, z: .5};  // back-bottom-left
+        let v6 = {x: .5, y: -.5, z: .5};   // back-bottom-right
+        let v7 = {x: .5, y: .5, z: .5};    // back-top-right
+        let v8 = {x: -.5, y: .5, z: .5};   // back-top-left
+
+        // Each face of the cube = 2 triangles (6 faces * 2 = 12 triangles)
+        // Front
+        this.triangles.push(new Triangle(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z));
+        this.triangles.push(new Triangle(v3.x, v3.y, v3.z, v4.x, v4.y, v4.z, v1.x, v1.y, v1.z));
+        // Back
+        this.triangles.push(new Triangle(v6.x, v6.y, v6.z, v5.x, v5.y, v5.z, v8.x, v8.y, v8.z));
+        this.triangles.push(new Triangle(v8.x, v8.y, v8.z, v7.x, v7.y, v7.z, v6.x, v6.y, v6.z));
+        // Left
+        this.triangles.push(new Triangle(v5.x, v5.y, v5.z, v1.x, v1.y, v1.z, v4.x, v4.y, v4.z));
+        this.triangles.push(new Triangle(v4.x, v4.y, v4.z, v8.x, v8.y, v8.z, v5.x, v5.y, v5.z));
+        // Right
+        this.triangles.push(new Triangle(v2.x, v2.y, v2.z, v6.x, v6.y, v6.z, v7.x, v7.y, v7.z));
+        this.triangles.push(new Triangle(v7.x, v7.y, v7.z, v3.x, v3.y, v3.z, v2.x, v2.y, v2.z));
+        // Top
+        this.triangles.push(new Triangle(v4.x, v4.y, v4.z, v3.x, v3.y, v3.z, v7.x, v7.y, v7.z));
+        this.triangles.push(new Triangle(v7.x, v7.y, v7.z, v8.x, v8.y, v8.z, v4.x, v4.y, v4.z));
+        // Bottom
+        this.triangles.push(new Triangle(v5.x, v5.y, v5.z, v6.x, v6.y, v6.z, v2.x, v2.y, v2.z));
+        this.triangles.push(new Triangle(v2.x, v2.y, v2.z, v1.x, v1.y, v1.z, v5.x, v5.y, v5.z));
+
+        // Apply the constructor parameters (SCALE THEN TRANSLATE)
+        this.vectorScale({x: edgeLength, y: edgeLength, z: edgeLength});
+        this.vectorTranslate({x: x, y: y, z: z});
+    }
+
+    vectorTranslate(translationVector){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorTranslate(translationVector);
+        }
+    }
+
+    vectorScale(scalingVector){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].vectorScale(scalingVector);
+        }
+    }
+
+    // Theta (Degrees)
+    // This is about the origin so it will not work (in a nice way) after any translation
+    rotateX(theta){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateX(theta);
+        }
+    }
+    rotateY(theta){
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].rotateY(theta);
+        }
+    }
+
+    draw(){
+        // Two shades per face (cardboard box brown), same color for both
+        // triangles of a face so it reads as one flat panel.
+        const colors = [
+            "#c8a06a", "#c8a06a", // front
+            "#8f6b3f", "#8f6b3f", // back
+            "#a97f4f", "#a97f4f", // left
+            "#d4b07e", "#d4b07e", // right
+            "#e0c397", "#e0c397", // top
+            "#7a5a35", "#7a5a35", // bottom
+        ];
+        for(let i = 0; i < this.triangles.length; i++){
+            this.triangles[i].draw(colors[i % colors.length]);
+        }
     }
 }
 
@@ -594,7 +1063,7 @@ function getTriangleArea(px1, py1, px2, py2, px3, py3){
 
 function clearDisplay(){
     for(let r = 0; r < ROW_SIZE; r++){
-        display.displayMatrix[r].fill(BACKGROUND_COLOR);
+        display.displayMatrix[r] = Array.from({length: COLUMN_SIZE}, () => ({color: BACKGROUND_COLOR, depth: Infinity}));
         display.depthMatrix[r].fill(Infinity);
     }
 }
@@ -617,8 +1086,13 @@ const obstacles = [];
 for(let i = 0; i < OBSTACLE_COUNT; i++){
     const lane = Math.floor(Math.random() * 3);
     const obstacleZ = TRACK_START_Z + 150 + i * 90 + Math.random() * 40;
-    const obstacleY = GROUND_Y + OBSTACLE_SCALE;
-    const obstacle = new Obstacle(LANE_X[lane], obstacleY, obstacleZ, OBSTACLE_SCALE);
+    // TrafficCone/CardboardBox are centered on -0.5..0.5 (half-height = 0.5 * scale),
+    // so the center needs to sit half a scale above the ground for the base to land on it.
+    const obstacleY = GROUND_Y + OBSTACLE_SCALE / 2;
+    // Alternate so half the obstacles are cones and half are boxes.
+    const obstacle = i % 2 === 0
+        ? new TrafficCone(LANE_X[lane], obstacleY, obstacleZ, OBSTACLE_SCALE)
+        : new CardboardBox(LANE_X[lane], obstacleY, obstacleZ, OBSTACLE_SCALE);
     obstacle.lane = lane;
     obstacles.push(obstacle);
 }
@@ -828,8 +1302,6 @@ function drawGame(){
     catBody.y = GROUND_Y + CAT_SCALE + CAT_Y_OFFSET + bobOffset;
     catBody.z = camera.z + CAT_FORWARD_OFFSET;
     catBody.draw();
-
-
 }
 
 // I got this off github which is apparently the best way to run a game
