@@ -291,56 +291,65 @@ class CatBody{
     }
 
     draw(){
-        // Back view — no face details (no eyes/whiskers/mouth), since the
-        // camera is behind the cat. 
-        this.vertices = [
-            // Ears + head top
-            { x: -4, y: 14, z: 0 },  // 0: left ear tip
-            { x: -6, y: 8, z: 0 },   // 1: left ear outer base
-            { x: -2, y: 8, z: 0 },   // 2: left ear inner base
-            { x: 0, y: 9, z: 0 },    // 3: head top center
-            { x: 2, y: 8, z: 0 },    // 4: right ear inner base
-            { x: 6, y: 8, z: 0 },    // 5: right ear outer base
-            { x: 4, y: 14, z: 0 },   // 6: right ear tip
+            // Back view — no face details (no eyes/whiskers/mouth), since the
+    // camera is behind the cat.
+    this.vertices = [
+        // Ears + head top
+        { x: -4, y: 14, z: 0 },  // 0: left ear tip
+        { x: -6, y: 8, z: 0 },   // 1: left ear outer base
+        { x: -2, y: 8, z: 0 },   // 2: left ear inner base
+        { x: 0, y: 9, z: 0 },    // 3: head top center
+        { x: 2, y: 8, z: 0 },    // 4: rig
+        { x: 6, y: 8, z: 0 },    // 5: right ear outer base
+        { x: 4, y: 14, z: 0 },   // 6: rig
 
-            // Right side: cheek -> shoulder -> body -> hip
-            { x: 6, y: 3, z: 0 },    // 7: right cheek
-            { x: 5, y: 0, z: 0 },    // 8: right shoulder
-            { x: 5, y: -4, z: 0 },   // 9: right side
-            { x: 4, y: -7, z: 0 },   // 10: right hip
+        // Right side: cheek -> shoulder -
+        { x: 6, y: 3, z: 0 },    // 7: right cheek
+        { x: 5, y: 0, z: 0 },    // 8: rig
+        { x: 5, y: -4, z: 0 },   // 9: right side
+        { x: 4, y: -7, z: 0 },   // 10: ri
 
-            // Tail (branches off the right hip)
-            { x: 4, y: -6, z: 0 },   // 11: tail base
-            { x: 7, y: -3, z: 0 },   // 12: tail mid
-            { x: 9, y: 1, z: 0 },    // 13: tail curve
-            { x: 8, y: 5, z: 0 },    // 14: tail tip
+        // Tail (branches off the right hi
+        { x: 4, y: -6, z: 0 },   // 11: tail base
+        { x: 7, y: -3, z: 0 },   // 12: ta
+        { x: 9, y: 1, z: 0 },    // 13: tail curve
+        { x: 8, y: 5, z: 0 },    // 14: ta
 
-            // Right leg
-            { x: 3, y: -10, z: 0 },  // 15: right leg
-            { x: 2, y: -11, z: 0 },  // 16: right paw
+        // Right leg
+        { x: 3, y: -10, z: 0 },  // 15: right leg
+        { x: 2, y: -11, z: 0 },  // 16: ri
 
-            // Left leg
-            { x: -3, y: -10, z: 0 }, // 17: left leg
-            { x: -2, y: -11, z: 0 }, // 18: left paw
+        // Left leg
+        { x: -3, y: -10, z: 0 }, // 17: left leg
+        { x: -2, y: -11, z: 0 }, // 18: le
 
-            // Left side: hip -> body -> shoulder -> cheek
-            { x: -4, y: -7, z: 0 },  // 19: left hip
-            { x: -5, y: -4, z: 0 },  // 20: left side
-            { x: -5, y: 0, z: 0 },   // 21: left shoulder
-            { x: -6, y: 3, z: 0 },   // 22: left cheek
-        ];
+        // Left side: hip -> body -> shoul
+        { x: -4, y: -7, z: 0 },  // 19: left hip
+        { x: -5, y: -4, z: 0 },  // 20: le
+        { x: -5, y: 0, z: 0 },   // 21: left shoulder
+        { x: -6, y: 3, z: 0 },   // 22: le
 
-        this.edges = [
-            [1,0], [0,2], [2,3], [3,4], [4,6], [6,5], // ear
-            [5,7], [7,8], [8,9], [9,10],              // right side down to hip
-            [10,11], [11,12], [12,13], [13,14],       // tai
-            [10,15], [15,16],                         // right leg to paw
-            [1,22], [22,21], [21,20], [20,19],        // lef
-            [19,17], [17,18],                         // left leg to paw
-        ];
-        
-        const projected = projectInstance(this);
-        drawWireframe(projected, this.edges);
+        { x: 0, y: 4, z: 0 },    // 23: fier
+    ];
+
+    this.triangles= [
+        { indices: [23,0,2], color: "#c78a4a" }, { indices: [23,2,3], color: "#c78a4a" },
+        { indices: [23,3,4], color: "#c78a4a" }, { indices: [23,4,6], color: "#c78a4a" },
+        { indices: [23,6,5], color: "#c78a4a" }, { indices: [23,5,7], color: "#c78a4a" },
+        { indices: [23,7,8], color: "#c78a4a" }, { indices: [23,8,9], color: "#c78a4a" }, 
+        { indices: [23,9,10], color: "#c78a4a" }, { indices: [23,10,19], color: "#c78a4a" },
+        { indices: [23,19,20], color: "#c78a4a" }, { indices: [23,20,21], color: "#c78a4a" },
+        { indices: [23,21,22], color: "#c78a4a" }, { indices: [23,22,1], color: "#c78a4a" },
+        { indices: [23,1,0], color: "#c78a4a" },
+    ]
+    this.decorationEdges = [
+        [10,11], [11,12], [12,13], [13,14],
+        [10,15], [15,16],                   // right leg to paw
+        [19,17], [17,18],
+    ];
+
+    drawTriangles(this);
+    drawWireframe(projectInstance(this), this.decorationEdges);
     }
 }
 
@@ -423,19 +432,19 @@ class TrackSegment{
         { x: LANE_WIDTH / 2, y: -TRACK_WALL_HEIGHT, z: 5 },   // 11: back-right-divider
     ];
 
-    this.edges = [ // 0,1 and 4,5 deleted
-        [0,3], [1,2],
-        [4,7], [5,6],
-        [0,4], [1,5], [2,6], [3,7],
-        [8,10], [9,11]
+
+    this.triangles = [
+        { indices: [0,5,1], color: "#6b6b6b" }, { indices: [0,4,5], color: "#6b6b6b" }, // floor 
+        { indices: [0,3,7], color: "#3a3a5e" }, { indices: [0,7,4], color: "#3a3a5e" }, // left wall
+            { indices: [1,6,2], color: "#3a3a5e" }, { indices: [1,5,6], color: "#3a3a5e" }, // right wall 
     ];
 
-    if(this.showEndCap){
-        this.edges.push([4,5]);
-    }
+    this.laneDividerEdges = [[8,10], [9,11]];
 
     const projected = projectInstance(this);
-    drawWireframe(projected, this.edges);
+    drawTriangles(this);
+    drawWireframe(projectInstance(this), this.laneDividerEdges);
+  
     }
 }
 
