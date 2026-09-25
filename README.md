@@ -18,6 +18,8 @@ More about this in the Design Aspect.
 
 ## Youtube Video
 
+[Watch on YouTube](https://www.youtube.com/watch?v=-yg39smMpo8)
+
 ## Game Description 
 
 In the game- you get to play as a cat and your objective is to avoid/swat at obstacles and reach the finish line where you will be rewarded with Churros!
@@ -41,7 +43,7 @@ Our first iteration was having Koko and Margo shooting hearts at obstacles to br
 
 We started off with the concept of drawing our cat's head using the vertices and edges as shown below.
 
-![Margo's Hand-Drawn Version]()
+<img src="images/margo-sketch.png" width="20%" />
 
 Once we had that implemented- we started to work on the concept of the game. The environment for our game was going to be a track that keeps repeating N number of times as specified for the length of the level. We wanted the cat to have space to move around lanes which also allows for the characters to be scaled up which helped with the clarity of the objects we made. 
 
